@@ -6,13 +6,15 @@ import { pbkdf2 } from "https://deno.land/x/pbkdf2/mod.ts";
 import * as base64 from "https://deno.land/x/base64/mod.ts";
 
 import { Session, SessionImpl } from "./session.ts";
-import { V1_0, protocolVersion } from "./constants.ts";
 import {
   ReQLError,
   handshakeError,
   ReQLDriverError,
   ReQLAuthError
 } from "./errors.ts";
+import { Versions } from "./proto.ts";
+
+const protocolVersion = 0;
 
 export async function handshake(
   session: Session,
@@ -61,7 +63,7 @@ interface VersionHandshakeResponse {
 
 async function versionHandshake(session: Session) {
   // Send V1_0 magic number
-  session.write(V1_0);
+  session.write(new Uint8Array(new Uint32Array([Versions.V1_0]).buffer));
   const resp: VersionHandshakeResponse = await session.readNullTerminatedJSON();
   if (!resp.success) {
     throw new ReQLError(`Handshake failed.`);
