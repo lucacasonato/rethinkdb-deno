@@ -4,12 +4,14 @@ import { Object } from "./datum.ts";
 import { exprq } from "./expr.ts";
 
 export abstract class SingleSelection<T> extends Runnable<T> {
+  // TODO(lucacasonato): implement function variant
   update(value: Object) {
     return new Update<T>(this, value);
   }
-  delete(value: Object) {
+  delete() {
     return new Delete<T>(this);
   }
+  // TODO(lucacasonato): implement replace
 }
 
 export interface WriteResponse {

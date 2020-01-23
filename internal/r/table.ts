@@ -20,6 +20,7 @@ export class Table<T extends Datum> extends StreamSelection<T> {
   getAll(...ids: (string | ReQLString)[]) {
     return new Documents<T>(this, ids);
   }
+  // TODO(lucacasonato): implement insering a sequence
   insert(value: Object) {
     return new Insert<T>(this, value);
   }
@@ -32,6 +33,18 @@ export class Table<T extends Datum> extends StreamSelection<T> {
   wait() {
     return new TableWait(this);
   }
+  // TODO(lucacasonato): implement reconfigure
+  // TODO(lucacasonato): implement rebalance
+  // TODO(lucacasonato): implement sync
+  // TODO(lucacasonato): implement grant
+  // TODO(lucacasonato): implement indexCreate
+  // TODO(lucacasonato): implement indexDrop
+  // TODO(lucacasonato): implement indexList
+  // TODO(lucacasonato): implement indexStatus
+  // TODO(lucacasonato): implement indexWait
+  // TODO(lucacasonato): implement indexRename
+  // TODO(lucacasonato): implement setWriteHook
+  // TODO(lucacasonato): implement getWriteHook
 }
 
 export class TableCreate extends SingleSelection<WriteResponse> {

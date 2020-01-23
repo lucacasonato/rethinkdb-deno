@@ -42,6 +42,10 @@ export class ReQLString extends Runnable<string> {
   get query() {
     return this.value;
   }
+  // TODO(lucacasonato): implement match
+  // TODO(lucacasonato): implement upcase
+  // TODO(lucacasonato): implement downcase
+  // TODO(lucacasonato): implement split
 }
 export class ReQLBool extends Runnable<boolean> {
   constructor(private value?: any) {

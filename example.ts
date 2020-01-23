@@ -11,8 +11,6 @@ const text = function() {
   return 1 + 1;
 };
 
-console.log(text);
-
-const users = await r.do(r.js(`(function() {  return 1 * 20; })`)).run(session);
+const users = await r.uuid("asd").run(session);
 
 console.log(users);

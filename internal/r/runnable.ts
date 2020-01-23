@@ -7,6 +7,10 @@ const decoder = new TextDecoder();
 
 export abstract class Term {
   public abstract get query(): any[];
+
+  // TODO(lucacasonato): implement coerceTo
+  // TODO(lucacasonato): implement typeOf
+  // TODO(lucacasonato): implement info
 }
 
 interface ReQLResponse {

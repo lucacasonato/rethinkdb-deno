@@ -18,6 +18,15 @@ export const operators = {
   floor: (a: number | ReQLNumber) => new Floor(a),
   ceil: (a: number | ReQLNumber) => new Ceil(a),
   round: (a: number | ReQLNumber) => new Round(a)
+  // TODO(lucacasonato): implement branch
+  // TODO(lucacasonato): implement or
+  // TODO(lucacasonato): implement and
+  // TODO(lucacasonato): implement bitAnd
+  // TODO(lucacasonato): implement bitOr
+  // TODO(lucacasonato): implement bitXor
+  // TODO(lucacasonato): implement bitNot
+  // TODO(lucacasonato): implement bitSal
+  // TODO(lucacasonato): implement bitSar
 };
 
 class Equals extends ReQLBool {

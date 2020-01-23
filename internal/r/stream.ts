@@ -10,6 +10,9 @@ export abstract class StreamSelection<T extends Datum> extends Stream<T> {
   between(lowerKey: Datum, uppperKey: Datum) {
     return new Between<T>(this, lowerKey, uppperKey);
   }
+  // TODO(lucacasonato): implement update
+  // TODO(lucacasonato): implement delete
+  // TODO(lucacasonato): implement replace
 }
 
 class Between<T extends Datum> extends StreamSelection<T> {

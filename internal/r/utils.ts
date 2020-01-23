@@ -1,11 +1,4 @@
-import {
-  Datum,
-  ReQLDatum,
-  ReQLString,
-  ReQLBool,
-  ReQLNumber,
-  ReQLDatumTypes
-} from "./datum.ts";
+import { Datum, ReQLDatum, ReQLString } from "./datum.ts";
 import { TermType } from "../proto.ts";
 import { exprq } from "./expr.ts";
 import { ReQLFunction } from "./function.ts";
@@ -16,6 +9,17 @@ export const utils = {
   do: _do,
   js,
   uuid
+  // TODO(lucacasonato): implement default
+  // TODO(lucacasonato): implement json
+  // TODO(lucacasonato): implement literal
+  // TODO(lucacasonato): implement group
+  // TODO(lucacasonato): implement sum
+  // TODO(lucacasonato): implement avg
+  // TODO(lucacasonato): implement min
+  // TODO(lucacasonato): implement max
+  // TODO(lucacasonato): implement ungroup
+  // TODO(lucacasonato): implement random
+  // TODO(lucacasonato): implement toJSONString
 };
 
 function _do<T>(
@@ -64,9 +68,7 @@ class UUID extends ReQLString {
     super();
   }
   get query() {
-    return Array<any>(TermType.UUID).concat(
-      this.seed ? [[exprq(this.seed)]] : []
-    );
+    const query: any[] = [TermType.UUID];
+    return query.concat(this.seed ? [[exprq(this.seed)]] : []);
   }
 }
-

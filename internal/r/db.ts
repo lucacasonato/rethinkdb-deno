@@ -31,6 +31,9 @@ export class DB extends Term {
   wait() {
     return new DBWait(this);
   }
+  // TODO(lucacasonato): implement reconfigure
+  // TODO(lucacasonato): implement rebalance
+  // TODO(lucacasonato): implement grant
 }
 
 export class DBCreate extends SingleSelection<WriteResponse> {

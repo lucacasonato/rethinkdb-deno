@@ -1,8 +1,10 @@
 import { DB, DBCreate, DBDrop, DBList } from "./db.ts";
 import { expr } from "./expr.ts";
-import { operators } from "./operators.ts";
-import { utils } from "./utils.ts";
 import { ReQLString } from "./datum.ts";
+import { operators } from "./operators.ts";
+import { time } from "./time.ts";
+import { geometry } from "./geometry.ts";
+import { utils } from "./utils.ts";
 
 export const r = {
   expr,
@@ -18,6 +20,9 @@ export const r = {
   dbList() {
     return new DBList();
   },
+  // TODO(lucacasonato): implement grant
   ...operators,
+  ...time,
+  ...geometry,
   ...utils
 };

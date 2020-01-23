@@ -92,6 +92,8 @@ export abstract class Sequence<T extends Datum> extends Runnable<T> {
   zip<W extends Datum>() {
     return new Zip<T, W>(this);
   }
+  // TODO(lucacasonato): implement forEach
+  // TODO(lucacasonato): implement sample
 }
 
 class Slice<T extends Datum> extends Sequence<T> {
