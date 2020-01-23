@@ -1,6 +1,6 @@
-import { Session } from '../session.ts';
-import { ReQLError } from '../errors.ts';
-import { ResponseType, ResponseNote } from '../proto.ts';
+import { Session } from "../session.ts";
+import { ReQLError } from "../errors.ts";
+import { ResponseType, ResponseNote } from "../proto.ts";
 
 const encoder = new TextEncoder();
 const decoder = new TextDecoder();
@@ -16,7 +16,7 @@ interface ReQLResponse {
   n: ResponseNote[];
 }
 
-export abstract class Readable<T> extends Term {
+export abstract class Runnable<T> extends Term {
   public async run(session: Session): Promise<T[]> {
     const start = [1, this.query, {}];
     const data = JSON.stringify(start);
@@ -24,20 +24,27 @@ export abstract class Readable<T> extends Term {
     const respBuffer = await session.dispatch(buffer);
     const resp = decoder.decode(respBuffer);
     try {
-      const { t: type, b: backtrace, r }: ReQLResponse = JSON.parse(resp);
+      const re: ReQLResponse = JSON.parse(resp);
+      const { t: type, b: backtrace, r } = re;
       if (type === ResponseType.RUNTIME_ERROR) {
         throw new ReQLError(
-          `A runtime error occurred${backtrace ? ': ' + backtrace : ''}"."`
+          `A runtime error occurred${backtrace ? " at " + backtrace : ""}${
+            r[0] ? ": " + r[0] : "."
+          }.`
         );
       }
       if (type === ResponseType.COMPILE_ERROR) {
         throw new ReQLError(
-          `A compile error occurred${backtrace ? ': ' + backtrace : ''}"."`
+          `A compile error occurred${backtrace ? " at " + backtrace : ""}${
+            r[0] ? ": " + r[0] : "."
+          }`
         );
       }
       if (type === ResponseType.CLIENT_ERROR) {
         throw new ReQLError(
-          `A client error occurred${backtrace ? ': ' + backtrace : ''}"."`
+          `A client error occurred${backtrace ? " at " + backtrace : ""}${
+            r[0] ? ": " + r[0] : "."
+          }`
         );
       }
       if (
