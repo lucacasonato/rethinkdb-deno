@@ -1,7 +1,6 @@
 import { Term } from "./runnable.ts";
 import { TermType } from "../proto.ts";
-import { ReQLArray } from "./array.ts";
-import { expr, exprq } from "./expr.ts";
+import { exprq } from "./expr.ts";
 
 export class Var extends Term {
   constructor(private id: number) {
@@ -13,7 +12,7 @@ export class Var extends Term {
 }
 
 export class ReQLFunction extends Term {
-  constructor(private func: Function) {
+  constructor(private func?: Function) {
     super();
   }
   get query() {

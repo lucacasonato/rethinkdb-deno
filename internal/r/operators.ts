@@ -1,18 +1,23 @@
-import { Datum, ReQLBool, ReQLDatum } from "./datum.ts";
+import { Datum, ReQLBool, ReQLDatum, ReQLNumber, ReQLString } from "./datum.ts";
 import { TermType } from "../proto.ts";
 import { exprq } from "./expr.ts";
-import { ReQLFunction } from "./function.ts";
-import { SingleSelection } from "./single.ts";
 
 export const operators = {
-  do: _do,
   eq: (...items: Datum[]) => new Equals(items),
   ne: (...items: Datum[]) => new NotEquals(items),
   le: (...items: Datum[]) => new LessThan(items),
   lt: (...items: Datum[]) => new LessThanOrEqual(items),
   gt: (...items: Datum[]) => new GreaterThan(items),
   ge: (...items: Datum[]) => new GreaterThanOrEqual(items),
-  not: (val: boolean | ReQLBool) => new Not(val)
+  not: (val: boolean | ReQLBool) => new Not(val),
+  add,
+  sub: (...items: (number | ReQLNumber)[]) => new Subract(items),
+  mul: (...items: (number | ReQLNumber)[]) => new Multiply(items),
+  div: (...items: (number | ReQLNumber)[]) => new Divide(items),
+  mod: (a: number | ReQLNumber, b: number | ReQLNumber) => new Modulo(a, b),
+  floor: (a: number | ReQLNumber) => new Floor(a),
+  ceil: (a: number | ReQLNumber) => new Ceil(a),
+  round: (a: number | ReQLNumber) => new Round(a)
 };
 
 class Equals extends ReQLBool {
@@ -72,30 +77,87 @@ class Not extends ReQLBool {
   }
 }
 
-function _do<T>(
-  func: (...args: ReQLDatum[]) => T | ReQLFunction,
-  ...data: Datum[]
-) {
-  return new Do<T>(func, ...data);
-}
-
-class Do<T> extends SingleSelection<T> {
-  private data: Datum[];
-  constructor(
-    private func: (
-      a?: ReQLDatum,
-      b?: ReQLDatum,
-      c?: ReQLDatum
-    ) => T | ReQLFunction,
-    ...data: Datum[]
+function add(...items: (number | ReQLNumber)[]): AddNumber;
+function add(...items: (string | ReQLString)[]): AddString;
+function add(...items: (number | ReQLNumber)[] | (string | ReQLString)[]) {
+  if (
+    items.length > 0 &&
+    (typeof items[0] === "number" || items[0] instanceof ReQLNumber)
   ) {
+    return new AddNumber(items as (number | ReQLNumber)[]);
+  } else {
+    return new AddString(items as (string | ReQLString)[]);
+  }
+}
+class AddNumber extends ReQLNumber {
+  constructor(private val: (number | ReQLNumber)[]) {
     super();
-    this.data = data;
   }
   get query() {
-    return [
-      TermType.FUNCALL,
-      [exprq(this.func), ...this.data.map(d => exprq(d))]
-    ];
+    return [TermType.ADD, [...this.val.map(v => exprq(v))]];
+  }
+}
+class AddString extends ReQLString {
+  constructor(private val: (string | ReQLString)[]) {
+    super();
+  }
+  get query() {
+    return [TermType.ADD, [...this.val.map(v => exprq(v))]];
+  }
+}
+class Subract extends ReQLNumber {
+  constructor(private val: (number | ReQLNumber)[]) {
+    super();
+  }
+  get query() {
+    return [TermType.SUB, [...this.val.map(v => exprq(v))]];
+  }
+}
+class Multiply extends ReQLNumber {
+  constructor(private val: (number | ReQLNumber)[]) {
+    super();
+  }
+  get query() {
+    return [TermType.MUL, [...this.val.map(v => exprq(v))]];
+  }
+}
+class Divide extends ReQLNumber {
+  constructor(private val: (number | ReQLNumber)[]) {
+    super();
+  }
+  get query() {
+    return [TermType.DIV, [...this.val.map(v => exprq(v))]];
+  }
+}
+class Modulo extends ReQLNumber {
+  constructor(private a: number | ReQLNumber, private b: number | ReQLNumber) {
+    super();
+  }
+  get query() {
+    return [TermType.MOD, [exprq(this.a), exprq(this.b)]];
+  }
+}
+class Floor extends ReQLNumber {
+  constructor(private a: number | ReQLNumber) {
+    super();
+  }
+  get query() {
+    return [TermType.FLOOR, [exprq(this.a)]];
+  }
+}
+class Ceil extends ReQLNumber {
+  constructor(private a: number | ReQLNumber) {
+    super();
+  }
+  get query() {
+    return [TermType.CEIL, [exprq(this.a)]];
+  }
+}
+class Round extends ReQLNumber {
+  constructor(private a: number | ReQLNumber) {
+    super();
+  }
+  get query() {
+    return [TermType.ROUND, [exprq(this.a)]];
   }
 }

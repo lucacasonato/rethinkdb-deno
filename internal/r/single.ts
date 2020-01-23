@@ -1,6 +1,7 @@
 import { Runnable } from "./runnable.ts";
 import { TermType } from "../proto.ts";
 import { Object } from "./datum.ts";
+import { exprq } from "./expr.ts";
 
 export abstract class SingleSelection<T> extends Runnable<T> {
   update(value: Object) {
@@ -28,7 +29,7 @@ class Update<T> extends SingleSelection<WriteResponse> {
     super();
   }
   get query() {
-    return [TermType.UPDATE, [this.parent.query, this.value]];
+    return [TermType.UPDATE, [exprq(this.parent), exprq(this.value)]];
   }
 }
 
@@ -37,6 +38,6 @@ class Delete<T> extends SingleSelection<WriteResponse> {
     super();
   }
   get query() {
-    return [TermType.DELETE, [this.parent.query]];
+    return [TermType.DELETE, [exprq(this.parent)]];
   }
 }

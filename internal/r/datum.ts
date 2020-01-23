@@ -52,7 +52,7 @@ export class ReQLBool extends Runnable<boolean> {
   }
 }
 
-export class ReQLISO8601 extends Term {
+export class ReQLISO8601 extends Runnable<Date> {
   constructor(private date: Date) {
     super();
   }
@@ -61,7 +61,7 @@ export class ReQLISO8601 extends Term {
   }
 }
 
-export class ReQLBinary extends Term {
+export class ReQLBinary extends Runnable<ArrayBuffer> {
   constructor(private buffer: ArrayBuffer) {
     super();
   }
@@ -73,7 +73,7 @@ export class ReQLBinary extends Term {
   }
 }
 
-export class ReQLObject extends Term {
+export class ReQLObject extends Runnable<Object> {
   constructor(private obj: any, private depth: number) {
     super();
   }

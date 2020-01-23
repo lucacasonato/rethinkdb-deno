@@ -1,244 +1,339 @@
 import { Runnable } from "./runnable.ts";
 import { TermType } from "../proto.ts";
-import { Datum } from "./datum.ts";
+import { Datum, ReQLBool, ReQLNumber, ReQLString } from "./datum.ts";
 import { Pathspec } from "./pathspec.ts";
 import { SingleSelection } from "./single.ts";
-import { expr, exprq } from "./expr.ts";
+import { exprq, expr } from "./expr.ts";
+import { ReQLFunction } from "./function.ts";
+import { ReQLArray } from "./array.ts";
 
 export enum Ordering {
   Ascending = TermType.ASC,
   Descending = TermType.DESC
 }
 
-export abstract class Sequence<T> extends Runnable<T> {
-  slice(start: number, end: number) {
+export abstract class Sequence<T extends Datum> extends Runnable<T> {
+  slice(start: number | ReQLNumber, end: number | ReQLNumber) {
     return new Slice<T>(this, start, end);
   }
-  skip(skip: number) {
+  skip(skip: number | ReQLNumber) {
     return new Skip<T>(this, skip);
   }
-  limit(length: number) {
+  limit(length: number | ReQLNumber) {
     return new Limit<T>(this, length);
   }
-  contains(d: Datum) {
-    return new Contains<T>(this, d);
+  offsetsOf(predicate: Datum | ((doc: T) => ReQLBool) | ReQLFunction) {
+    return new OffsetOf<T>(this, predicate);
   }
-  getField(field: string) {
+  contains(predicate: Datum | ((doc: T) => ReQLBool) | ReQLFunction) {
+    return new Contains<T>(this, predicate);
+  }
+  getField(field: string | ReQLString) {
     return new GetField<T>(this, field);
   }
-  withFields<W>(...paths: Pathspec[]) {
+  withFields<W extends Datum>(...paths: Pathspec[]) {
     return new WithFields<T, W>(this, paths);
   }
-  pluck<W>(...paths: Pathspec[]) {
+  pluck<W extends Datum>(...paths: Pathspec[]) {
     return new Pluck<T, W>(this, paths);
   }
-  without<W>(...paths: Pathspec[]) {
+  without<W extends Datum>(...paths: Pathspec[]) {
     return new Without<T, W>(this, paths);
   }
-  filter(filter: Datum) {
+  merge(other: T[] | Sequence<T>) {
+    return new Merge<T>(this, other);
+  }
+  reduce(
+    reducer:
+      | ((accumulator: ReQLArray<T>, doc: T) => ReQLArray<T>)
+      | ReQLFunction
+  ) {
+    return new Reduce<T>(this, reducer);
+  }
+  map<W extends Datum>(mapper: ((doc: T) => W) | ReQLFunction) {
+    return new _Map<T, W>(this, mapper);
+  }
+  filter(filter: Datum | ((doc: T) => ReQLBool) | ReQLFunction) {
     return new Filter<T>(this, filter);
   }
+
+  // TODO(lucacasonato): implement concatMap
+
+  // TODO(lucacasonato): multiple fields
   orderBy(order: Ordering) {
     return new OrderBy<T>(this, order);
   }
   distinct() {
     return new Distinct<T>(this);
   }
+  // TODO(lucacasonato): implement function predicate
   count(filter?: Datum) {
     return new Count<T>(this, filter);
   }
   isEmpty() {
     return new IsEmpty<T>(this);
   }
-  union(...others: Sequence<T>[]) {
+  union(...others: (T[] | Sequence<T>)[]) {
     return new Union<T>(this, others);
   }
-  nth(n: number) {
+  nth(n: number | ReQLNumber) {
     return new Nth<T>(this, n);
   }
-  eqJoin<W>(joiner: string, right: Sequence<W>) {
+
+  // TODO(lucacasonato): implement bracket
+
+  // TODO(lucacasonato): inner join
+
+  // TODO(lucacasonato): outer join
+
+  eqJoin<W extends Datum>(joiner: string, right: T[] | Sequence<W>) {
     return new EqJoin<T, W>(this, joiner, right);
   }
-  zip<W>() {
+  zip<W extends Datum>() {
     return new Zip<T, W>(this);
   }
 }
 
-class Slice<T> extends Sequence<T> {
+class Slice<T extends Datum> extends Sequence<T> {
   constructor(
     private parent: Sequence<T>,
-    private start: number,
-    private end: number
+    private start: number | ReQLNumber,
+    private end: number | ReQLNumber
   ) {
     super();
   }
   get query() {
     return [
       TermType.SLICE,
-      [this.parent.query, exprq(this.start), exprq(this.end)]
+      [exprq(this.parent), exprq(this.start), exprq(this.end)]
     ];
   }
 }
 
-class Skip<T> extends Sequence<T> {
-  constructor(private parent: Sequence<T>, private _skip: number) {
+class Skip<T extends Datum> extends Sequence<T> {
+  constructor(private parent: Sequence<T>, private _skip: number | ReQLNumber) {
     super();
   }
   get query() {
-    return [TermType.SKIP, [this.parent.query, exprq(this._skip)]];
+    return [TermType.SKIP, [exprq(this.parent), exprq(this._skip)]];
   }
 }
 
-class Limit<T> extends Sequence<T> {
-  constructor(private parent: Sequence<T>, private length: number) {
+class Limit<T extends Datum> extends Sequence<T> {
+  constructor(
+    private parent: Sequence<T>,
+    private length: number | ReQLNumber
+  ) {
     super();
   }
   get query() {
-    return [TermType.LIMIT, [this.parent.query, exprq(this.length)]];
+    return [TermType.LIMIT, [exprq(this.parent), exprq(this.length)]];
   }
 }
 
-class Contains<T> extends Sequence<T> {
-  constructor(private parent: Sequence<T>, private d: Datum) {
+class OffsetOf<T extends Datum> extends Sequence<T> {
+  constructor(
+    private parent: Sequence<T>,
+    private predicate: Datum | ((doc: T) => ReQLBool) | ReQLFunction
+  ) {
     super();
   }
   get query() {
-    return [TermType.CONTAINS, [this.parent.query, exprq(this.d)]];
+    return [TermType.OFFSETS_OF, [exprq(this.parent), exprq(this.predicate)]];
   }
 }
 
-class GetField<T> extends Sequence<T> {
-  constructor(private parent: Sequence<T>, private id: string) {
+class Contains<T extends Datum> extends ReQLBool {
+  constructor(
+    private parent: Sequence<T>,
+    private predicate: Datum | ((doc: T) => ReQLBool) | ReQLFunction
+  ) {
     super();
   }
   get query() {
-    return [TermType.GET_FIELD, [this.parent.query, exprq(this.id)]];
+    return [TermType.CONTAINS, [exprq(this.parent), exprq(this.predicate)]];
   }
 }
 
-class WithFields<T, W> extends Sequence<W> {
+class GetField<T extends Datum> extends Sequence<T> {
+  constructor(private parent: Sequence<T>, private id: string | ReQLString) {
+    super();
+  }
+  get query() {
+    return [TermType.GET_FIELD, [exprq(this.parent), exprq(this.id)]];
+  }
+}
+
+class WithFields<T extends Datum, W extends Datum> extends Sequence<W> {
   constructor(private parent: Sequence<T>, private paths: Pathspec[]) {
     super();
   }
   get query() {
     return [
       TermType.WITH_FIELDS,
-      [this.parent.query, ...this.paths.map(p => exprq(p))]
+      [exprq(this.parent), ...this.paths.map(p => exprq(p))]
     ];
   }
 }
 
-class Pluck<T, W> extends Sequence<W> {
+class Pluck<T extends Datum, W extends Datum> extends Sequence<W> {
   constructor(private parent: Sequence<T>, private paths: Pathspec[]) {
     super();
   }
   get query() {
     return [
       TermType.PLUCK,
-      [this.parent.query, ...this.paths.map(p => exprq(p))]
+      [exprq(this.parent), ...this.paths.map(p => exprq(p))]
     ];
   }
 }
 
-class Without<T, W> extends Sequence<W> {
+class Without<T extends Datum, W extends Datum> extends Sequence<W> {
   constructor(private parent: Sequence<T>, private paths: Pathspec[]) {
     super();
   }
   get query() {
     return [
       TermType.WITHOUT,
-      [this.parent.query, ...this.paths.map(p => exprq(p))]
+      [exprq(this.parent), ...this.paths.map(p => exprq(p))]
     ];
   }
 }
 
-class Filter<T> extends Sequence<T> {
-  constructor(private parent: Sequence<T>, private _filter: Datum) {
+class Merge<T extends Datum> extends Sequence<T> {
+  constructor(private parent: Sequence<T>, private other: T[] | Sequence<T>) {
     super();
   }
   get query() {
-    return [TermType.FILTER, [this.parent.query, exprq(this._filter)]];
+    return [TermType.MERGE, [exprq(this.parent), exprq(this.other)]];
   }
 }
 
-class OrderBy<T> extends Sequence<T> {
+class Reduce<T extends Datum> extends Sequence<T> {
+  constructor(
+    private parent: Sequence<T>,
+    private reducer:
+      | ((accumulator: ReQLArray<T>, doc: T) => ReQLArray<T>)
+      | ReQLFunction
+  ) {
+    super();
+  }
+  get query() {
+    return [TermType.REDUCE, [exprq(this.parent), exprq(this.reducer)]];
+  }
+}
+
+class _Map<T extends Datum, W extends Datum> extends Sequence<W> {
+  constructor(
+    private parent: Sequence<T>,
+    private mapper: ((doc: T) => W) | ReQLFunction
+  ) {
+    super();
+  }
+  get query() {
+    return [TermType.MAP, [exprq(this.parent), exprq(this.mapper)]];
+  }
+}
+
+class Filter<T extends Datum> extends Sequence<T> {
+  constructor(
+    private parent: Sequence<T>,
+    private _filter: Datum | ((doc: T) => ReQLBool) | ReQLFunction
+  ) {
+    super();
+  }
+  get query() {
+    return [TermType.FILTER, [exprq(this.parent), exprq(this._filter)]];
+  }
+}
+
+class OrderBy<T extends Datum> extends Sequence<T> {
   constructor(private parent: Sequence<T>, private order: Ordering) {
     super();
   }
   get query() {
-    return [TermType.ORDER_BY, [this.parent.query, [this.order]]];
+    return [TermType.ORDER_BY, [exprq(this.parent), [this.order]]];
   }
 }
 
-class Distinct<T> extends Sequence<T> {
+class Distinct<T extends Datum> extends Sequence<T> {
   constructor(private parent: Sequence<T>) {
     super();
   }
   get query() {
-    return [TermType.DISTINCT, [this.parent.query]];
+    return [TermType.DISTINCT, [exprq(this.parent)]];
   }
 }
 
-class Count<T> extends SingleSelection<number> {
+class Count<T extends Datum> extends ReQLNumber {
   constructor(private parent: Sequence<T>, private _filter?: Datum) {
     super();
   }
   get query() {
     return [
       TermType.COUNT,
-      [this.parent.query].concat(this._filter ? [exprq(this._filter)] : [])
+      [exprq(this.parent)].concat(this._filter ? [exprq(this._filter)] : [])
     ];
   }
 }
 
-class IsEmpty<T> extends SingleSelection<boolean> {
+class IsEmpty<T extends Datum> extends ReQLBool {
   constructor(private parent: Sequence<T>) {
     super();
   }
   get query() {
-    return [TermType.IS_EMPTY, [this.parent.query]];
+    return [TermType.IS_EMPTY, [exprq(this.parent)]];
   }
 }
 
-class Union<T> extends Sequence<T> {
-  constructor(private parent: Sequence<T>, private others: Sequence<T>[]) {
+class Union<T extends Datum> extends Sequence<T> {
+  constructor(
+    private parent: Sequence<T>,
+    private others: (T[] | Sequence<T>)[]
+  ) {
     super();
   }
   get query() {
     return [
       TermType.UNION,
-      [this.parent.query, ...this.others.map(s => s.query)]
+      [exprq(this.parent), ...this.others.map(s => exprq(s))]
     ];
   }
 }
 
-class Nth<T> extends SingleSelection<T> {
-  constructor(private parent: Sequence<T>, private n: number) {
+class Nth<T extends Datum> extends SingleSelection<T> {
+  constructor(private parent: Sequence<T>, private n: number | ReQLNumber) {
     super();
   }
   get query() {
-    return [TermType.NTH, [this.parent.query, exprq(this.n)]];
+    return [TermType.NTH, [exprq(this.parent), exprq(this.n)]];
   }
 }
 
-class EqJoin<T, W> extends Sequence<{ left: T; right: W }> {
+class EqJoin<T extends Datum, W extends Datum> extends Sequence<{
+  left: T;
+  right: W;
+}> {
   constructor(
     private left: Sequence<T>,
     private joiner: string,
-    private right: Sequence<W>
+    private right: T[] | Sequence<W>
   ) {
     super();
   }
   get query() {
-    return [TermType.EQ_JOIN, [this.left.query, exprq(this.joiner), this.left]];
+    return [
+      TermType.EQ_JOIN,
+      [exprq(this.left), exprq(this.joiner), exprq(this.right)]
+    ];
   }
 }
 
-class Zip<T, W> extends Sequence<W> {
+class Zip<T extends Datum, W extends Datum> extends Sequence<W> {
   constructor(private parent: Sequence<T>) {
     super();
   }
   get query() {
-    return [TermType.ZIP, [this.parent.query]];
+    return [TermType.ZIP, [exprq(this.parent)]];
   }
 }

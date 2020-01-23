@@ -1,23 +1,23 @@
 import { Runnable } from "./runnable.ts";
 import { DB } from "./db.ts";
 import { TermType } from "../proto.ts";
-import { Datum, Object } from "./datum.ts";
+import { Datum, Object, ReQLString } from "./datum.ts";
 import { ReQLArray } from "./array.ts";
 import { StreamSelection } from "./stream.ts";
 import { WriteResponse, SingleSelection } from "./single.ts";
 import { expr, exprq } from "./expr.ts";
 
-export class Table<T = Datum> extends StreamSelection<T> {
-  constructor(private db: DB, private table: string) {
+export class Table<T extends Datum> extends StreamSelection<T> {
+  constructor(private db: DB, private table: string | ReQLString) {
     super();
   }
   get query() {
-    return [TermType.TABLE, [this.db.query, this.table]];
+    return [TermType.TABLE, [exprq(this.db), exprq(this.table)]];
   }
-  get(id: string) {
+  get(id: string | ReQLString) {
     return new Document<T>(this, id);
   }
-  getAll(...ids: string[]) {
+  getAll(...ids: (string | ReQLString)[]) {
     return new Documents<T>(this, ids);
   }
   insert(value: Object) {
@@ -35,20 +35,20 @@ export class Table<T = Datum> extends StreamSelection<T> {
 }
 
 export class TableCreate extends SingleSelection<WriteResponse> {
-  constructor(private db: DB, private table: string) {
+  constructor(private db: DB, private table: string | ReQLString) {
     super();
   }
   get query() {
-    return [TermType.TABLE_CREATE, [this.db.query, exprq(this.table)]];
+    return [TermType.TABLE_CREATE, [exprq(this.db), exprq(this.table)]];
   }
 }
 
 export class TableDrop extends SingleSelection<WriteResponse> {
-  constructor(private db: DB, private table: string) {
+  constructor(private db: DB, private table: string | ReQLString) {
     super();
   }
   get query() {
-    return [TermType.TABLE_DROP, [this.db.query, exprq(this.table)]];
+    return [TermType.TABLE_DROP, [exprq(this.db), exprq(this.table)]];
   }
 }
 
@@ -57,27 +57,30 @@ export class TableList extends SingleSelection<string> {
     super();
   }
   get query() {
-    return [TermType.TABLE_LIST, [this.db.query]];
+    return [TermType.TABLE_LIST, [exprq(this.db)]];
   }
 }
 
-class Document<T> extends SingleSelection<T> {
-  constructor(private parent: Runnable<T>, private id: string) {
+class Document<T extends Datum> extends SingleSelection<T> {
+  constructor(private parent: Runnable<T>, private id: string | ReQLString) {
     super();
   }
   get query() {
-    return [TermType.GET, [this.parent.query, exprq(this.id)]];
+    return [TermType.GET, [exprq(this.parent), exprq(this.id)]];
   }
 }
 
-class Documents<T> extends ReQLArray<T> {
-  constructor(private parent: Runnable<T>, private ids: string[]) {
+class Documents<T extends Datum> extends ReQLArray<T> {
+  constructor(
+    private parent: Runnable<T>,
+    private ids: (string | ReQLString)[]
+  ) {
     super();
   }
   get query() {
     return [
       TermType.GET_ALL,
-      [this.parent.query, ...this.ids.map(s => exprq(s))]
+      [exprq(this.parent), ...this.ids.map(s => exprq(s))]
     ];
   }
 }
@@ -87,7 +90,7 @@ class Insert<T> extends SingleSelection<WriteResponse> {
     super();
   }
   get query() {
-    return [TermType.INSERT, [this.parent.query, exprq(this.value)]];
+    return [TermType.INSERT, [exprq(this.parent), exprq(this.value)]];
   }
 }
 

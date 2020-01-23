@@ -3,22 +3,23 @@ import { Table, TableCreate, TableDrop, TableList } from "./table.ts";
 import { TermType } from "../proto.ts";
 import { SingleSelection, WriteResponse } from "./single.ts";
 import { ReQLArray } from "./array.ts";
-import { expr, exprq } from "./expr.ts";
+import { exprq } from "./expr.ts";
+import { ReQLString, Datum } from "./datum.ts";
 
 export class DB extends Term {
-  constructor(private database: string) {
+  constructor(private database: string | ReQLString) {
     super();
   }
   get query() {
-    return [TermType.DB, [this.database]];
+    return [TermType.DB, [exprq(this.database)]];
   }
-  table<T = any>(table: string) {
+  table<T extends Datum>(table: string | ReQLString) {
     return new Table<T>(this, table);
   }
-  tableCreate(table: string) {
+  tableCreate(table: string | ReQLString) {
     return new TableCreate(this, table);
   }
-  tableDrop(table: string) {
+  tableDrop(table: string | ReQLString) {
     return new TableDrop(this, table);
   }
   tableList() {
@@ -33,7 +34,7 @@ export class DB extends Term {
 }
 
 export class DBCreate extends SingleSelection<WriteResponse> {
-  constructor(private database: string) {
+  constructor(private database: string | ReQLString) {
     super();
   }
   get query() {
@@ -42,7 +43,7 @@ export class DBCreate extends SingleSelection<WriteResponse> {
 }
 
 export class DBDrop extends SingleSelection<WriteResponse> {
-  constructor(private database: string) {
+  constructor(private database: string | ReQLString) {
     super();
   }
   get query() {
@@ -50,7 +51,7 @@ export class DBDrop extends SingleSelection<WriteResponse> {
   }
 }
 
-export class DBList extends ReQLArray<string> {
+export class DBList extends ReQLArray<ReQLString> {
   constructor() {
     super();
   }
@@ -69,7 +70,7 @@ export class DBConfig extends SingleSelection<DBConfigResponse> {
     super();
   }
   get query() {
-    return [TermType.CONFIG, [this.database.query]];
+    return [TermType.CONFIG, [exprq(this.database)]];
   }
 }
 
@@ -82,6 +83,6 @@ export class DBWait extends SingleSelection<DBWaitResponse> {
     super();
   }
   get query() {
-    return [TermType.WAIT, [this.database.query]];
+    return [TermType.WAIT, [exprq(this.database)]];
   }
 }

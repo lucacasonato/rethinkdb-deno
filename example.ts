@@ -7,6 +7,12 @@ const session = await connect({
   password: Deno.env()["RETHINK_PASSWORD"]
 });
 
-const users = await r.do((s) => r.eq(s, 1), 1).run(session);
+const text = function() {
+  return 1 + 1;
+};
+
+console.log(text);
+
+const users = await r.do(r.js(`(function() {  return 1 * 20; })`)).run(session);
 
 console.log(users);

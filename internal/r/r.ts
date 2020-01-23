@@ -1,24 +1,23 @@
 import { DB, DBCreate, DBDrop, DBList } from "./db.ts";
-import { expr, exprq } from "./expr.ts";
+import { expr } from "./expr.ts";
 import { operators } from "./operators.ts";
-import { SingleSelection } from "./single.ts";
-import { ReQLFunction } from "./function.ts";
-import { TermType } from "../proto.ts";
-import { Datum, ReQLDatum } from "./datum.ts";
+import { utils } from "./utils.ts";
+import { ReQLString } from "./datum.ts";
 
 export const r = {
   expr,
-  db(database: string) {
+  db(database: string | ReQLString) {
     return new DB(database);
   },
-  dbCreate(database: string) {
+  dbCreate(database: string | ReQLString) {
     return new DBCreate(database);
   },
-  dbDrop(database: string) {
+  dbDrop(database: string | ReQLString) {
     return new DBDrop(database);
   },
   dbList() {
     return new DBList();
   },
-  ...operators
+  ...operators,
+  ...utils
 };
