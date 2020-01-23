@@ -43,12 +43,12 @@ export abstract class Sequence<T extends Datum> extends Runnable<T> {
   merge(other: T[] | Sequence<T>) {
     return new Merge<T>(this, other);
   }
-  reduce(
+  reduce<W extends Datum>(
     reducer:
-      | ((accumulator: ReQLArray<T>, doc: T) => ReQLArray<T>)
+      | ((accumulator: ReQLArray<W>, doc: T) => ReQLArray<W>)
       | ReQLFunction
   ) {
-    return new Reduce<T>(this, reducer);
+    return new Reduce<T, W>(this, reducer);
   }
   map<W extends Datum>(mapper: ((doc: T) => W) | ReQLFunction) {
     return new _Map<T, W>(this, mapper);
@@ -209,11 +209,11 @@ class Merge<T extends Datum> extends Sequence<T> {
   }
 }
 
-class Reduce<T extends Datum> extends Sequence<T> {
+class Reduce<T extends Datum, W extends Datum> extends Sequence<W> {
   constructor(
     private parent: Sequence<T>,
     private reducer:
-      | ((accumulator: ReQLArray<T>, doc: T) => ReQLArray<T>)
+      | ((accumulator: ReQLArray<W>, doc: T) => ReQLArray<W>)
       | ReQLFunction
   ) {
     super();
