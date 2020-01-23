@@ -1,10 +1,10 @@
-import { r, connect } from "./mod.ts";
+import { r, connect } from './mod.ts';
 
 const session = await connect({
-  hostname: "rethinkdb.jappieco.ga",
+  hostname: 'rethinkdb.jappieco.ga',
   port: 35285,
-  username: Deno.env()["RETHINK_USER"],
-  password: Deno.env()["RETHINK_PASSWORD"]
+  username: Deno.env()['RETHINK_USER'],
+  password: Deno.env()['RETHINK_PASSWORD'],
 });
 
 interface DatabaseUser {
@@ -13,8 +13,9 @@ interface DatabaseUser {
 }
 
 const users = await r
-  .db("rethinkdb")
-  .table<DatabaseUser>("users")
+  .db('rethinkdb')
+  .table<DatabaseUser>('users')
+  .getField('id')
   .run(session);
 
 console.log(users);
