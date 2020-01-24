@@ -1,6 +1,6 @@
+import { ReQLString } from "./datum_primitives.ts";
 import { DB, DBCreate, DBDrop, DBList } from "./db.ts";
 import { expr } from "./expr.ts";
-import { ReQLString } from "./datum.ts";
 import { operators } from "./operators.ts";
 import { time } from "./time.ts";
 import { geometry } from "./geometry.ts";

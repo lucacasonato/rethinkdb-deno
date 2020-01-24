@@ -1,10 +1,11 @@
 import { Runnable, Term } from "./runnable.ts";
+import { ReQLNumber } from "./datum_primitives.ts";
 import { Sequence } from "./sequence.ts";
-import { Datum, ReQLNumber } from "./datum.ts";
+import { Datum, ReQLDatumTypes } from "./datum.ts";
 import { TermType } from "../proto.ts";
-import { expr, exprq } from "./expr.ts";
+import { exprq } from "./expr.ts";
 
-export class ReQLArray<T extends Datum> extends Sequence<T> {
+export class ReQLArray<T extends ReQLDatumTypes> extends Sequence<T> {
   constructor(private _array?: Term[]) {
     super();
   }
@@ -38,15 +39,15 @@ export class ReQLArray<T extends Datum> extends Sequence<T> {
   deleteAt(offset: number | ReQLNumber, endOffset?: number | ReQLNumber) {
     return new DeleteAt<T>(this, offset, endOffset);
   }
-  changeAt<W extends Datum>(offset: number | ReQLNumber, value: W) {
-    return new ChangeAt<W, T>(this, offset, value);
+  changeAt(offset: number | ReQLNumber, value: T) {
+    return new ChangeAt<T>(this, offset, value);
   }
   spliceAt(offset: number | ReQLNumber, array: T[] | ReQLArray<T>) {
     return new SpliceAt<T>(this, offset, array);
   }
 }
 
-class Append<T extends Datum> extends ReQLArray<T> {
+class Append<T extends ReQLDatumTypes> extends ReQLArray<T> {
   constructor(private parent: ReQLArray<T>, private d: Datum) {
     super();
   }
@@ -55,7 +56,7 @@ class Append<T extends Datum> extends ReQLArray<T> {
   }
 }
 
-class Prepend<T extends Datum> extends ReQLArray<T> {
+class Prepend<T extends ReQLDatumTypes> extends ReQLArray<T> {
   constructor(private parent: ReQLArray<T>, private d: Datum) {
     super();
   }
@@ -64,7 +65,7 @@ class Prepend<T extends Datum> extends ReQLArray<T> {
   }
 }
 
-class Difference<T extends Datum> extends ReQLArray<T> {
+class Difference<T extends ReQLDatumTypes> extends ReQLArray<T> {
   constructor(private parent: ReQLArray<T>, private other: T[] | ReQLArray<T>) {
     super();
   }
@@ -73,7 +74,7 @@ class Difference<T extends Datum> extends ReQLArray<T> {
   }
 }
 
-class SetInsert<T extends Datum> extends ReQLArray<T> {
+class SetInsert<T extends ReQLDatumTypes> extends ReQLArray<T> {
   constructor(private parent: ReQLArray<T>, private d: Datum) {
     super();
   }
@@ -82,7 +83,7 @@ class SetInsert<T extends Datum> extends ReQLArray<T> {
   }
 }
 
-class SetIntersection<T extends Datum> extends ReQLArray<T> {
+class SetIntersection<T extends ReQLDatumTypes> extends ReQLArray<T> {
   constructor(private parent: ReQLArray<T>, private other: T[] | ReQLArray<T>) {
     super();
   }
@@ -91,7 +92,7 @@ class SetIntersection<T extends Datum> extends ReQLArray<T> {
   }
 }
 
-class SetUnion<T extends Datum> extends ReQLArray<T> {
+class SetUnion<T extends ReQLDatumTypes> extends ReQLArray<T> {
   constructor(private parent: ReQLArray<T>, private other: T[] | ReQLArray<T>) {
     super();
   }
@@ -100,7 +101,7 @@ class SetUnion<T extends Datum> extends ReQLArray<T> {
   }
 }
 
-class SetDifference<T extends Datum> extends ReQLArray<T> {
+class SetDifference<T extends ReQLDatumTypes> extends ReQLArray<T> {
   constructor(private parent: Runnable<T>, private other: T[] | ReQLArray<T>) {
     super();
   }
@@ -109,7 +110,7 @@ class SetDifference<T extends Datum> extends ReQLArray<T> {
   }
 }
 
-class InsertAt<T extends Datum> extends ReQLArray<T> {
+class InsertAt<T extends ReQLDatumTypes> extends ReQLArray<T> {
   constructor(
     private parent: ReQLArray<T>,
     private offset: number | ReQLNumber,
@@ -125,7 +126,7 @@ class InsertAt<T extends Datum> extends ReQLArray<T> {
   }
 }
 
-class DeleteAt<T extends Datum> extends ReQLArray<T> {
+class DeleteAt<T extends ReQLDatumTypes> extends ReQLArray<T> {
   constructor(
     private parent: ReQLArray<T>,
     private offset: number | ReQLNumber,
@@ -143,11 +144,11 @@ class DeleteAt<T extends Datum> extends ReQLArray<T> {
   }
 }
 
-class ChangeAt<T extends Datum, W extends Datum> extends ReQLArray<W> {
+class ChangeAt<T extends ReQLDatumTypes> extends ReQLArray<T> {
   constructor(
-    private parent: ReQLArray<W>,
+    private parent: ReQLArray<T>,
     private offset: number | ReQLNumber,
-    private value: T
+    private value: Datum
   ) {
     super();
   }
@@ -159,7 +160,7 @@ class ChangeAt<T extends Datum, W extends Datum> extends ReQLArray<W> {
   }
 }
 
-class SpliceAt<T extends Datum> extends ReQLArray<T> {
+class SpliceAt<T extends ReQLDatumTypes> extends ReQLArray<T> {
   constructor(
     private parent: ReQLArray<T>,
     private offset: number | ReQLNumber,

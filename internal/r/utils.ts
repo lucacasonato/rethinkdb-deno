@@ -1,4 +1,5 @@
-import { Datum, ReQLDatum, ReQLString } from "./datum.ts";
+import { ReQLString, ReQLDatum } from "./datum_primitives.ts";
+import { Datum, ReQLDatumTypes } from "./datum.ts";
 import { TermType } from "../proto.ts";
 import { exprq } from "./expr.ts";
 import { ReQLFunction } from "./function.ts";
@@ -22,14 +23,14 @@ export const utils = {
   // TODO(lucacasonato): implement toJSONString
 };
 
-function _do<T>(
+function _do<T extends ReQLDatumTypes>(
   func: ((...args: ReQLDatum[]) => T) | ReQLFunction,
   ...data: Datum[]
 ) {
   return new Do<T>(func, ...data);
 }
 
-class Do<T> extends SingleSelection<T> {
+class Do<T extends ReQLDatumTypes> extends SingleSelection<T> {
   private data: Datum[];
   constructor(
     private func: ((...args: ReQLDatum[]) => T) | ReQLFunction,
@@ -46,11 +47,11 @@ class Do<T> extends SingleSelection<T> {
   }
 }
 
-function js<T>(code: string | ReQLString) {
+function js<T extends ReQLDatumTypes>(code: string | ReQLString) {
   return new JS<T>(code);
 }
 
-class JS<T> extends Runnable<T> {
+class JS<T extends ReQLDatumTypes> extends Runnable<T> {
   constructor(private code: string | ReQLString) {
     super();
   }

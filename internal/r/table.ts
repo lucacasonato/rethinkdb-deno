@@ -1,33 +1,35 @@
 import { Runnable } from "./runnable.ts";
+import { ReQLBool, ReQLString, ReQLNumber } from "./datum_primitives.ts";
+import { Object, ReQLObject, ReQLDatumTypes } from "./datum.ts";
 import { DB } from "./db.ts";
 import { TermType } from "../proto.ts";
-import { Datum, Object, ReQLString } from "./datum.ts";
 import { ReQLArray } from "./array.ts";
 import { StreamSelection } from "./stream.ts";
 import { WriteResponse, SingleSelection } from "./single.ts";
-import { expr, exprq } from "./expr.ts";
+import { exprq } from "./expr.ts";
 
-export class Table<T extends Datum> extends StreamSelection<T> {
+export class Table<T extends ReQLDatumTypes> extends StreamSelection<T> {
   constructor(private db: DB, private table: string | ReQLString) {
     super();
   }
   get query() {
     return [TermType.TABLE, [exprq(this.db), exprq(this.table)]];
   }
+  // TODO(lucacasonato): implement selecting by number
   get(id: string | ReQLString) {
     return new Document<T>(this, id);
   }
   getAll(...ids: (string | ReQLString)[]) {
     return new Documents<T>(this, ids);
   }
-  // TODO(lucacasonato): implement insering a sequence
+  // TODO(lucacasonato): implement inserting a sequence
   insert(value: Object) {
     return new Insert<T>(this, value);
   }
   config() {
     return new TableConfig(this);
   }
-  status() {
+  status(): TableStatus {
     return new TableStatus(this);
   }
   wait() {
@@ -47,7 +49,7 @@ export class Table<T extends Datum> extends StreamSelection<T> {
   // TODO(lucacasonato): implement getWriteHook
 }
 
-export class TableCreate extends SingleSelection<WriteResponse> {
+export class TableCreate extends ReQLObject<WriteResponse> {
   constructor(private db: DB, private table: string | ReQLString) {
     super();
   }
@@ -56,7 +58,7 @@ export class TableCreate extends SingleSelection<WriteResponse> {
   }
 }
 
-export class TableDrop extends SingleSelection<WriteResponse> {
+export class TableDrop extends ReQLObject<WriteResponse> {
   constructor(private db: DB, private table: string | ReQLString) {
     super();
   }
@@ -65,7 +67,7 @@ export class TableDrop extends SingleSelection<WriteResponse> {
   }
 }
 
-export class TableList extends SingleSelection<string> {
+export class TableList extends ReQLArray<ReQLString> {
   constructor(private db: DB) {
     super();
   }
@@ -74,7 +76,7 @@ export class TableList extends SingleSelection<string> {
   }
 }
 
-class Document<T extends Datum> extends SingleSelection<T> {
+class Document<T extends ReQLDatumTypes> extends SingleSelection<T> {
   constructor(private parent: Runnable<T>, private id: string | ReQLString) {
     super();
   }
@@ -83,7 +85,7 @@ class Document<T extends Datum> extends SingleSelection<T> {
   }
 }
 
-class Documents<T extends Datum> extends ReQLArray<T> {
+class Documents<T extends ReQLDatumTypes> extends ReQLArray<T> {
   constructor(
     private parent: Runnable<T>,
     private ids: (string | ReQLString)[]
@@ -98,7 +100,7 @@ class Documents<T extends Datum> extends ReQLArray<T> {
   }
 }
 
-class Insert<T> extends SingleSelection<WriteResponse> {
+class Insert<T extends ReQLDatumTypes> extends ReQLObject<WriteResponse> {
   constructor(private parent: Runnable<T>, private value: Object) {
     super();
   }
@@ -107,23 +109,27 @@ class Insert<T> extends SingleSelection<WriteResponse> {
   }
 }
 
-export interface TableConfigResponse {
-  id: string;
-  name: string;
-  db: string;
-  primary_key: string;
-  shards: {
-    primary_replica: string;
-    replicas: string[];
-    nonvoting_replicas: string[];
-  }[];
-  indexes: string[];
-  write_acks: "majority" | "single";
-  durability: "soft" | "hard";
-}
+export type TableConfigResponse = {
+  id: ReQLString;
+  name: ReQLString;
+  db: ReQLString;
+  primary_key: ReQLString;
+  shards: ReQLArray<
+    ReQLObject<{
+      primary_replica: ReQLString;
+      replicas: ReQLArray<ReQLString>;
+      nonvoting_replicas: ReQLArray<ReQLString>;
+    }>
+  >;
+  indexes: ReQLArray<ReQLString>;
+  write_acks: ReQLString;
+  durability: ReQLString;
+};
 
-export class TableConfig extends SingleSelection<TableConfigResponse> {
-  constructor(private table: Table<any>) {
+export class TableConfig extends SingleSelection<
+  ReQLObject<TableConfigResponse>
+> {
+  constructor(private table: Table<ReQLDatumTypes>) {
     super();
   }
   get query() {
@@ -131,33 +137,33 @@ export class TableConfig extends SingleSelection<TableConfigResponse> {
   }
 }
 
-interface TableStatusResponse {
-  id: string;
-  name: string;
-  db: string;
-  status: {
-    ready_for_outdated_reads: boolean;
-    ready_for_reads: boolean;
-    ready_for_writes: boolean;
-    all_replicas_ready: boolean;
-  };
-  shards: {
-    primary_replicas: string[];
-    replicas: {
-      server: string;
-      state:
-        | "ready"
-        | "transitioning"
-        | "backfilling"
-        | "disconnected"
-        | "waiting_for_primary"
-        | "waiting_for_quorum";
-    }[];
-  }[];
-}
+type TableStatusResponse = {
+  id: ReQLString;
+  name: ReQLString;
+  db: ReQLString;
+  status: ReQLObject<{
+    ready_for_outdated_reads: ReQLBool;
+    ready_for_reads: ReQLBool;
+    ready_for_writes: ReQLBool;
+    all_replicas_ready: ReQLBool;
+  }>;
+  shards: ReQLArray<
+    ReQLObject<{
+      primary_replicas: ReQLArray<ReQLString>;
+      replicas: ReQLArray<
+        ReQLObject<{
+          server: ReQLString;
+          state: ReQLString;
+        }>
+      >;
+    }>
+  >;
+};
 
-export class TableStatus extends SingleSelection<TableStatusResponse> {
-  constructor(private table: Table<any>) {
+export class TableStatus extends SingleSelection<
+  ReQLObject<TableStatusResponse>
+> {
+  constructor(private table: Table<ReQLDatumTypes>) {
     super();
   }
   get query() {
@@ -165,12 +171,12 @@ export class TableStatus extends SingleSelection<TableStatusResponse> {
   }
 }
 
-interface TableWaitResponse {
-  ready: number;
-}
+type TableWaitResponse = {
+  ready: ReQLNumber;
+};
 
-export class TableWait extends SingleSelection<TableWaitResponse> {
-  constructor(private table: Table<any>) {
+export class TableWait extends ReQLObject<TableWaitResponse> {
+  constructor(private table: Table<ReQLDatumTypes>) {
     super();
   }
   get query() {

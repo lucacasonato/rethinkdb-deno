@@ -1,4 +1,5 @@
-import { Datum, ReQLBool, ReQLDatum, ReQLNumber, ReQLString } from "./datum.ts";
+import { ReQLBool, ReQLNumber, ReQLString } from "./datum_primitives.ts";
+import { Datum } from "./datum.ts";
 import { TermType } from "../proto.ts";
 import { exprq } from "./expr.ts";
 

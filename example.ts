@@ -11,6 +11,9 @@ const text = function() {
   return 1 + 1;
 };
 
-const users = await r.uuid("asd").run(session);
+const users = await r
+  .db("testing")
+  .config()
+  .run(session);
 
 console.log(users);

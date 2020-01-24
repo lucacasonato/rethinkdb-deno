@@ -1,17 +1,13 @@
+import { Term } from "./runnable.ts";
+import { ReQLBool, ReQLNumber, ReQLString, ReQLISO8601, ReQLBinary } from "./datum_primitives.ts";
 import {
-  ReQLDatum,
-  ReQLISO8601,
-  ReQLBinary,
   ReQLObject,
   ReQLDatumTypes,
   Object,
   Datum,
-  ReQLNumber,
-  ReQLString,
-  ReQLBool
+  MakeReQLObject
 } from "./datum.ts";
 import { ReQLFunction } from "./function.ts";
-import { Term } from "./runnable.ts";
 import { ReQLDriverError } from "../errors.ts";
 import { ReQLArray } from "./array.ts";
 
@@ -65,7 +61,7 @@ export function expr(
     case "function":
       return new ReQLFunction(value);
     case "object":
-      return new ReQLObject(value, depth);
+      return new MakeReQLObject(value, depth);
   }
 }
 

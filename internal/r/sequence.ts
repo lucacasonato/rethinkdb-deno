@@ -1,9 +1,14 @@
 import { Runnable } from "./runnable.ts";
+import {
+  ReQLBool,
+  ReQLNumber,
+  ReQLString,
+  ReQLDatum
+} from "./datum_primitives.ts";
+import { Datum, ReQLDatumTypes, ReQLObject } from "./datum.ts";
 import { TermType } from "../proto.ts";
-import { Datum, ReQLBool, ReQLNumber, ReQLString } from "./datum.ts";
 import { Pathspec } from "./pathspec.ts";
-import { SingleSelection } from "./single.ts";
-import { exprq, expr } from "./expr.ts";
+import { exprq } from "./expr.ts";
 import { ReQLFunction } from "./function.ts";
 import { ReQLArray } from "./array.ts";
 
@@ -12,7 +17,7 @@ export enum Ordering {
   Descending = TermType.DESC
 }
 
-export abstract class Sequence<T extends Datum> extends Runnable<T> {
+export abstract class Sequence<T extends ReQLDatumTypes> extends Runnable<T> {
   slice(start: number | ReQLNumber, end: number | ReQLNumber) {
     return new Slice<T>(this, start, end);
   }
@@ -29,28 +34,28 @@ export abstract class Sequence<T extends Datum> extends Runnable<T> {
     return new Contains<T>(this, predicate);
   }
   getField(field: string | ReQLString) {
-    return new GetField<T>(this, field);
+    return new GetField<ReQLObject>(this as Sequence<ReQLObject>, field);
   }
-  withFields<W extends Datum>(...paths: Pathspec[]) {
-    return new WithFields<T, W>(this, paths);
+  withFields<W extends ReQLObject>(...paths: Pathspec[]) {
+    return new WithFields<ReQLObject, W>(this as Sequence<ReQLObject>, paths);
   }
-  pluck<W extends Datum>(...paths: Pathspec[]) {
-    return new Pluck<T, W>(this, paths);
+  pluck<W extends ReQLObject>(...paths: Pathspec[]) {
+    return new Pluck<ReQLObject, W>(this as Sequence<ReQLObject>, paths);
   }
-  without<W extends Datum>(...paths: Pathspec[]) {
-    return new Without<T, W>(this, paths);
+  without<W extends ReQLObject>(...paths: Pathspec[]) {
+    return new Without<ReQLObject, W>(this as Sequence<ReQLObject>, paths);
   }
   merge(other: T[] | Sequence<T>) {
     return new Merge<T>(this, other);
   }
-  reduce<W extends Datum>(
+  reduce<W extends ReQLDatumTypes>(
     reducer:
       | ((accumulator: ReQLArray<W>, doc: T) => ReQLArray<W>)
       | ReQLFunction
   ) {
     return new Reduce<T, W>(this, reducer);
   }
-  map<W extends Datum>(mapper: ((doc: T) => W) | ReQLFunction) {
+  map<W extends ReQLDatumTypes>(mapper: ((doc: T) => W) | ReQLFunction) {
     return new _Map<T, W>(this, mapper);
   }
   filter(filter: Datum | ((doc: T) => ReQLBool) | ReQLFunction) {
@@ -86,17 +91,17 @@ export abstract class Sequence<T extends Datum> extends Runnable<T> {
 
   // TODO(lucacasonato): outer join
 
-  eqJoin<W extends Datum>(joiner: string, right: T[] | Sequence<W>) {
+  eqJoin<W extends ReQLObject>(joiner: string, right: T[] | Sequence<W>) {
     return new EqJoin<T, W>(this, joiner, right);
   }
-  zip<W extends Datum>() {
+  zip<W extends ReQLObject>() {
     return new Zip<T, W>(this);
   }
   // TODO(lucacasonato): implement forEach
   // TODO(lucacasonato): implement sample
 }
 
-class Slice<T extends Datum> extends Sequence<T> {
+class Slice<T extends ReQLDatumTypes> extends Sequence<T> {
   constructor(
     private parent: Sequence<T>,
     private start: number | ReQLNumber,
@@ -112,7 +117,7 @@ class Slice<T extends Datum> extends Sequence<T> {
   }
 }
 
-class Skip<T extends Datum> extends Sequence<T> {
+class Skip<T extends ReQLDatumTypes> extends Sequence<T> {
   constructor(private parent: Sequence<T>, private _skip: number | ReQLNumber) {
     super();
   }
@@ -121,7 +126,7 @@ class Skip<T extends Datum> extends Sequence<T> {
   }
 }
 
-class Limit<T extends Datum> extends Sequence<T> {
+class Limit<T extends ReQLDatumTypes> extends Sequence<T> {
   constructor(
     private parent: Sequence<T>,
     private length: number | ReQLNumber
@@ -133,7 +138,7 @@ class Limit<T extends Datum> extends Sequence<T> {
   }
 }
 
-class OffsetOf<T extends Datum> extends Sequence<T> {
+class OffsetOf<T extends ReQLDatumTypes> extends Sequence<T> {
   constructor(
     private parent: Sequence<T>,
     private predicate: Datum | ((doc: T) => ReQLBool) | ReQLFunction
@@ -145,7 +150,7 @@ class OffsetOf<T extends Datum> extends Sequence<T> {
   }
 }
 
-class Contains<T extends Datum> extends ReQLBool {
+class Contains<T extends ReQLDatumTypes> extends ReQLBool {
   constructor(
     private parent: Sequence<T>,
     private predicate: Datum | ((doc: T) => ReQLBool) | ReQLFunction
@@ -157,7 +162,7 @@ class Contains<T extends Datum> extends ReQLBool {
   }
 }
 
-class GetField<T extends Datum> extends Sequence<T> {
+class GetField<T extends ReQLObject> extends Sequence<T> {
   constructor(private parent: Sequence<T>, private id: string | ReQLString) {
     super();
   }
@@ -166,7 +171,9 @@ class GetField<T extends Datum> extends Sequence<T> {
   }
 }
 
-class WithFields<T extends Datum, W extends Datum> extends Sequence<W> {
+class WithFields<T extends ReQLObject, W extends ReQLObject> extends Sequence<
+  W
+> {
   constructor(private parent: Sequence<T>, private paths: Pathspec[]) {
     super();
   }
@@ -178,7 +185,7 @@ class WithFields<T extends Datum, W extends Datum> extends Sequence<W> {
   }
 }
 
-class Pluck<T extends Datum, W extends Datum> extends Sequence<W> {
+class Pluck<T extends ReQLObject, W extends ReQLObject> extends Sequence<W> {
   constructor(private parent: Sequence<T>, private paths: Pathspec[]) {
     super();
   }
@@ -190,7 +197,7 @@ class Pluck<T extends Datum, W extends Datum> extends Sequence<W> {
   }
 }
 
-class Without<T extends Datum, W extends Datum> extends Sequence<W> {
+class Without<T extends ReQLObject, W extends ReQLObject> extends Sequence<W> {
   constructor(private parent: Sequence<T>, private paths: Pathspec[]) {
     super();
   }
@@ -202,7 +209,7 @@ class Without<T extends Datum, W extends Datum> extends Sequence<W> {
   }
 }
 
-class Merge<T extends Datum> extends Sequence<T> {
+class Merge<T extends ReQLDatumTypes> extends Sequence<T> {
   constructor(private parent: Sequence<T>, private other: T[] | Sequence<T>) {
     super();
   }
@@ -211,7 +218,10 @@ class Merge<T extends Datum> extends Sequence<T> {
   }
 }
 
-class Reduce<T extends Datum, W extends Datum> extends Sequence<W> {
+class Reduce<
+  T extends ReQLDatumTypes,
+  W extends ReQLDatumTypes
+> extends Sequence<W> {
   constructor(
     private parent: Sequence<T>,
     private reducer:
@@ -225,7 +235,9 @@ class Reduce<T extends Datum, W extends Datum> extends Sequence<W> {
   }
 }
 
-class _Map<T extends Datum, W extends Datum> extends Sequence<W> {
+class _Map<T extends ReQLDatumTypes, W extends ReQLDatumTypes> extends Sequence<
+  W
+> {
   constructor(
     private parent: Sequence<T>,
     private mapper: ((doc: T) => W) | ReQLFunction
@@ -237,7 +249,7 @@ class _Map<T extends Datum, W extends Datum> extends Sequence<W> {
   }
 }
 
-class Filter<T extends Datum> extends Sequence<T> {
+class Filter<T extends ReQLDatumTypes> extends Sequence<T> {
   constructor(
     private parent: Sequence<T>,
     private _filter: Datum | ((doc: T) => ReQLBool) | ReQLFunction
@@ -249,7 +261,7 @@ class Filter<T extends Datum> extends Sequence<T> {
   }
 }
 
-class OrderBy<T extends Datum> extends Sequence<T> {
+class OrderBy<T extends ReQLDatumTypes> extends Sequence<T> {
   constructor(private parent: Sequence<T>, private order: Ordering) {
     super();
   }
@@ -258,7 +270,7 @@ class OrderBy<T extends Datum> extends Sequence<T> {
   }
 }
 
-class Distinct<T extends Datum> extends Sequence<T> {
+class Distinct<T extends ReQLDatumTypes> extends Sequence<T> {
   constructor(private parent: Sequence<T>) {
     super();
   }
@@ -267,7 +279,7 @@ class Distinct<T extends Datum> extends Sequence<T> {
   }
 }
 
-class Count<T extends Datum> extends ReQLNumber {
+class Count<T extends ReQLDatumTypes> extends ReQLNumber {
   constructor(private parent: Sequence<T>, private _filter?: Datum) {
     super();
   }
@@ -279,7 +291,7 @@ class Count<T extends Datum> extends ReQLNumber {
   }
 }
 
-class IsEmpty<T extends Datum> extends ReQLBool {
+class IsEmpty<T extends ReQLDatumTypes> extends ReQLBool {
   constructor(private parent: Sequence<T>) {
     super();
   }
@@ -288,7 +300,7 @@ class IsEmpty<T extends Datum> extends ReQLBool {
   }
 }
 
-class Union<T extends Datum> extends Sequence<T> {
+class Union<T extends ReQLDatumTypes> extends Sequence<T> {
   constructor(
     private parent: Sequence<T>,
     private others: (T[] | Sequence<T>)[]
@@ -303,7 +315,7 @@ class Union<T extends Datum> extends Sequence<T> {
   }
 }
 
-class Nth<T extends Datum> extends SingleSelection<T> {
+class Nth<T extends ReQLDatumTypes> extends ReQLDatum<T> {
   constructor(private parent: Sequence<T>, private n: number | ReQLNumber) {
     super();
   }
@@ -312,10 +324,15 @@ class Nth<T extends Datum> extends SingleSelection<T> {
   }
 }
 
-class EqJoin<T extends Datum, W extends Datum> extends Sequence<{
-  left: T;
-  right: W;
-}> {
+class EqJoin<
+  T extends ReQLDatumTypes,
+  W extends ReQLDatumTypes
+> extends Sequence<
+  ReQLObject<{
+    left: T;
+    right: W;
+  }>
+> {
   constructor(
     private left: Sequence<T>,
     private joiner: string,
@@ -331,7 +348,9 @@ class EqJoin<T extends Datum, W extends Datum> extends Sequence<{
   }
 }
 
-class Zip<T extends Datum, W extends Datum> extends Sequence<W> {
+class Zip<T extends ReQLDatumTypes, W extends ReQLDatumTypes> extends Sequence<
+  W
+> {
   constructor(private parent: Sequence<T>) {
     super();
   }

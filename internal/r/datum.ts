@@ -1,8 +1,14 @@
-import * as base64 from "https://deno.land/x/base64/mod.ts";
-import { Term, Runnable } from "./runnable.ts";
 import { TermType } from "../proto.ts";
-import { expr, exprq } from "./expr.ts";
+import { Runnable } from "./runnable.ts";
+import { exprq } from "./expr.ts";
 import { ReQLArray } from "./array.ts";
+import {
+  ReQLBool,
+  ReQLNumber,
+  ReQLString,
+  ReQLISO8601,
+  ReQLBinary
+} from "./datum_primitives.ts";
 
 export type Object = { [k: string]: Datum } | { [k: number]: Datum };
 
@@ -17,7 +23,9 @@ export type PrimitiveDatumTypes =
   | Array<Datum>;
 
 export type ReQLDatumTypes =
-  | ReQLDatum
+  | ReQLNumber
+  | ReQLString
+  | ReQLBool
   | ReQLObject
   | ReQLISO8601
   | ReQLBinary
@@ -25,59 +33,15 @@ export type ReQLDatumTypes =
 
 export type Datum = PrimitiveDatumTypes | ReQLDatumTypes;
 
-export type ReQLDatum = ReQLNumber | ReQLString | ReQLBool;
+export type ReQLObjectTypes =
+  | { [k: string]: ReQLDatumTypes }
+  | { [k: number]: ReQLDatumTypes };
 
-export class ReQLNumber extends Runnable<number> {
-  constructor(private value?: any) {
-    super();
-  }
-  get query() {
-    return this.value;
-  }
-}
-export class ReQLString extends Runnable<string> {
-  constructor(private value?: any) {
-    super();
-  }
-  get query() {
-    return this.value;
-  }
-  // TODO(lucacasonato): implement match
-  // TODO(lucacasonato): implement upcase
-  // TODO(lucacasonato): implement downcase
-  // TODO(lucacasonato): implement split
-}
-export class ReQLBool extends Runnable<boolean> {
-  constructor(private value?: any) {
-    super();
-  }
-  get query() {
-    return this.value;
-  }
-}
+export abstract class ReQLObject<
+  T extends ReQLObjectTypes = ReQLObjectTypes
+> extends Runnable<ReQLObject<T>> {}
 
-export class ReQLISO8601 extends Runnable<Date> {
-  constructor(private date: Date) {
-    super();
-  }
-  get query() {
-    return [TermType.ISO8601, [this.date.toISOString()]];
-  }
-}
-
-export class ReQLBinary extends Runnable<ArrayBuffer> {
-  constructor(private buffer: ArrayBuffer) {
-    super();
-  }
-  get query() {
-    return [
-      TermType.BINARY,
-      [base64.fromUint8Array(new Uint8Array(this.buffer))]
-    ];
-  }
-}
-
-export class ReQLObject extends Runnable<Object> {
+export class MakeReQLObject extends ReQLObject {
   constructor(private obj: any, private depth: number) {
     super();
   }

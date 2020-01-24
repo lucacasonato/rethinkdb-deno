@@ -1,10 +1,11 @@
 import { Term } from "./runnable.ts";
+import { ReQLString, ReQLNumber } from "./datum_primitives.ts";
 import { Table, TableCreate, TableDrop, TableList } from "./table.ts";
 import { TermType } from "../proto.ts";
 import { SingleSelection, WriteResponse } from "./single.ts";
 import { ReQLArray } from "./array.ts";
 import { exprq } from "./expr.ts";
-import { ReQLString, Datum } from "./datum.ts";
+import { ReQLObject, ReQLDatumTypes } from "./datum.ts";
 
 export class DB extends Term {
   constructor(private database: string | ReQLString) {
@@ -13,7 +14,7 @@ export class DB extends Term {
   get query() {
     return [TermType.DB, [exprq(this.database)]];
   }
-  table<T extends Datum>(table: string | ReQLString) {
+  table<T extends ReQLDatumTypes>(table: string | ReQLString) {
     return new Table<T>(this, table);
   }
   tableCreate(table: string | ReQLString) {
@@ -36,7 +37,7 @@ export class DB extends Term {
   // TODO(lucacasonato): implement grant
 }
 
-export class DBCreate extends SingleSelection<WriteResponse> {
+export class DBCreate extends ReQLObject<WriteResponse> {
   constructor(private database: string | ReQLString) {
     super();
   }
@@ -45,7 +46,7 @@ export class DBCreate extends SingleSelection<WriteResponse> {
   }
 }
 
-export class DBDrop extends SingleSelection<WriteResponse> {
+export class DBDrop extends ReQLObject<WriteResponse> {
   constructor(private database: string | ReQLString) {
     super();
   }
@@ -63,12 +64,12 @@ export class DBList extends ReQLArray<ReQLString> {
   }
 }
 
-export interface DBConfigResponse {
-  id: string;
-  name: string;
-}
+export type DBConfigResponse = {
+  id: ReQLString;
+  name: ReQLString;
+};
 
-export class DBConfig extends SingleSelection<DBConfigResponse> {
+export class DBConfig extends SingleSelection<ReQLObject<DBConfigResponse>> {
   constructor(private database: DB) {
     super();
   }
@@ -77,11 +78,11 @@ export class DBConfig extends SingleSelection<DBConfigResponse> {
   }
 }
 
-interface DBWaitResponse {
-  ready: number;
-}
+type DBWaitResponse = {
+  ready: ReQLNumber;
+};
 
-export class DBWait extends SingleSelection<DBWaitResponse> {
+export class DBWait extends ReQLObject<DBWaitResponse> {
   constructor(private database: DB) {
     super();
   }
