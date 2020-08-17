@@ -1,19 +1,24 @@
 import { r, connect } from "./mod.ts";
+import { ReQLString } from "./internal/r/datum_primitives.ts";
+import { DBConfig, DBConfigResponse } from "./internal/r/db.ts";
 
 const session = await connect({
-  hostname: "rethinkdb.jappieco.ga",
-  port: 35285,
-  username: Deno.env()["RETHINK_USER"],
-  password: Deno.env()["RETHINK_PASSWORD"]
+  hostname: "localhost",
+  port: 28015,
+  username: Deno.env.get("RETHINK_USER"),
+  password: Deno.env.get("RETHINK_PASSWORD"),
 });
 
-const text = function() {
+const text = function () {
   return 1 + 1;
 };
 
 const users = await r
-  .db("testing")
-  .config()
+  .db("test")
+  .table("test")
+  // .count()
+  // .run(session);
+  .status()
   .run(session);
 
-console.log(users);
+console.log(users[0]);

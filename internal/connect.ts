@@ -20,9 +20,9 @@ export async function connect({
   hostname,
   port = 28015,
   username = "admin",
-  password = ""
+  password = "",
 }: ConnectOptions): Promise<Session> {
-  const conn = await Deno.dial({ hostname, port, transport: "tcp" });
+  const conn = await Deno.connect({ hostname, port, transport: "tcp" });
   const session = new SessionImpl(conn);
 
   await handshake(session, username, password);

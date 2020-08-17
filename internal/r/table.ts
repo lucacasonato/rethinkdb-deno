@@ -29,7 +29,7 @@ export class Table<T extends ReQLDatumTypes> extends StreamSelection<T> {
   config() {
     return new TableConfig(this);
   }
-  status(): TableStatus {
+  status() {
     return new TableStatus(this);
   }
   wait() {
@@ -88,14 +88,14 @@ class Document<T extends ReQLDatumTypes> extends SingleSelection<T> {
 class Documents<T extends ReQLDatumTypes> extends ReQLArray<T> {
   constructor(
     private parent: Runnable<T>,
-    private ids: (string | ReQLString)[]
+    private ids: (string | ReQLString)[],
   ) {
     super();
   }
   get query() {
     return [
       TermType.GET_ALL,
-      [exprq(this.parent), ...this.ids.map(s => exprq(s))]
+      [exprq(this.parent), ...this.ids.map((s) => exprq(s))],
     ];
   }
 }
@@ -126,10 +126,10 @@ export type TableConfigResponse = {
   durability: ReQLString;
 };
 
-export class TableConfig extends SingleSelection<
+export class TableConfig<T extends ReQLDatumTypes> extends SingleSelection<
   ReQLObject<TableConfigResponse>
 > {
-  constructor(private table: Table<ReQLDatumTypes>) {
+  constructor(private table: Table<T>) {
     super();
   }
   get query() {
@@ -160,10 +160,10 @@ type TableStatusResponse = {
   >;
 };
 
-export class TableStatus extends SingleSelection<
+export class TableStatus<T extends ReQLDatumTypes> extends SingleSelection<
   ReQLObject<TableStatusResponse>
 > {
-  constructor(private table: Table<ReQLDatumTypes>) {
+  constructor(private table: Table<T>) {
     super();
   }
   get query() {
@@ -175,8 +175,10 @@ type TableWaitResponse = {
   ready: ReQLNumber;
 };
 
-export class TableWait extends ReQLObject<TableWaitResponse> {
-  constructor(private table: Table<ReQLDatumTypes>) {
+export class TableWait<T extends ReQLDatumTypes> extends ReQLObject<
+  TableWaitResponse
+> {
+  constructor(private table: Table<T>) {
     super();
   }
   get query() {

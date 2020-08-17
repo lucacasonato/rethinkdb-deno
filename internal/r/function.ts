@@ -12,7 +12,7 @@ export class Var extends Term {
 }
 
 export class ReQLFunction extends Term {
-  constructor(private func?: Function) {
+  constructor(private func: Function) {
     super();
   }
   get query() {

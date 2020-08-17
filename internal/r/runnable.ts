@@ -2,13 +2,14 @@ import { Session } from "../session.ts";
 import { ReQLError } from "../errors.ts";
 import { ResponseType, ResponseNote } from "../proto.ts";
 import { ReQLBool, ReQLNumber, ReQLString } from "./datum_primitives.ts";
-import { ReQLDatumTypes, ReQLObject } from "./datum.ts";
+import { ReQLDatumTypes, ReQLObject, ReQLObjectTypes } from "./datum.ts";
+import { ReQLArray } from "./array.ts";
 
 const encoder = new TextEncoder();
 const decoder = new TextDecoder();
 
 export abstract class Term {
-  public abstract get query(): any[];
+  public abstract get query(): unknown[];
 
   // TODO(lucacasonato): implement coerceTo
   // TODO(lucacasonato): implement typeOf
@@ -17,28 +18,25 @@ export abstract class Term {
 
 interface ReQLResponse {
   t: ResponseType;
+  // deno-lint-ignore no-explicit-any
   r?: any[];
   b?: unknown;
   n: ResponseNote[];
 }
 
-/*type UnDatumReQLObject<T extends ReQLObjectTypes> = {
-  [B in keyof T]: UnDatumed<T[B]>;
-};*/
-type UnDatumed<T extends ReQLDatumTypes> = T extends ReQLObject<infer X>
-  ? {
-      [B in typeof X]: X[B];
-    }
-  : T extends ReQLNumber
-  ? number
-  : T extends ReQLString
-  ? string
-  : T extends ReQLBool
-  ? boolean
-  : unknown;
+// type UnDatumMap<X extends ReQLObjectTypes> = {
+//   [B in keyof X]: UnDatumed<X[B]>;
+// };
+// type UnDatumed<T extends ReQLDatumTypes> = T extends ReQLNumber ? number
+//   : T extends ReQLString ? string
+//   : T extends ReQLBool ? boolean
+//   : T extends ReQLObject<infer Y> ? UnDatumMap<Y>
+//   : T extends ReQLArray<infer Z> ? Z[]
+//   : null;
 
 export abstract class Runnable<T extends ReQLDatumTypes> extends Term {
-  public async run<W = UnDatumed<T>>(session: Session): Promise<W[]> {
+  // deno-lint-ignore no-explicit-any
+  public async run<W = any>(session: Session): Promise<W[]> {
     const start = [1, this.query, {}];
     const data = JSON.stringify(start);
     const buffer = encoder.encode(data);
@@ -50,32 +48,33 @@ export abstract class Runnable<T extends ReQLDatumTypes> extends Term {
       if (type === ResponseType.RUNTIME_ERROR) {
         throw new ReQLError(
           `A runtime error occurred${backtrace ? " at " + backtrace : ""}${
-            r[0] ? ": " + r[0] : "."
-          }.`
+            r && r[0] ? ": " + r[0] : "."
+          }.`,
         );
       }
       if (type === ResponseType.COMPILE_ERROR) {
         throw new ReQLError(
           `A compile error occurred${backtrace ? " at " + backtrace : ""}${
-            r[0] ? ": " + r[0] : "."
-          }`
+            r && r[0] ? ": " + r[0] : "."
+          }`,
         );
       }
       if (type === ResponseType.CLIENT_ERROR) {
         throw new ReQLError(
           `A client error occurred${backtrace ? " at " + backtrace : ""}${
-            r[0] ? ": " + r[0] : "."
-          }`
+            r && r[0] ? ": " + r[0] : "."
+          }`,
         );
       }
       if (
-        type === ResponseType.SUCCESS_ATOM ||
-        type === ResponseType.SUCCESS_SEQUENCE
+        (type === ResponseType.SUCCESS_ATOM ||
+          type === ResponseType.SUCCESS_SEQUENCE) &&
+        r
       ) {
         return r;
       }
       throw new ReQLError(
-        `The returned response type is not implemented (${type})`
+        `The returned response type is not implemented (${type})`,
       );
     } catch (err) {
       throw new ReQLError(`Failed to parse response: ${err}`);

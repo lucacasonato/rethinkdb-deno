@@ -1,15 +1,11 @@
 import { Runnable } from "./runnable.ts";
 import { ReQLNumber, ReQLString } from "./datum_primitives.ts";
 import { TermType } from "../proto.ts";
-import {
-  Object,
-  ReQLObject,
-  ReQLDatumTypes
-} from "./datum.ts";
+import { Object, ReQLObject, ReQLDatumTypes } from "./datum.ts";
 import { exprq } from "./expr.ts";
 
 export abstract class SingleSelection<
-  T extends ReQLDatumTypes
+  T extends ReQLDatumTypes,
 > extends Runnable<T> {
   // TODO(lucacasonato): implement function variant
   update(value: Object) {
@@ -30,7 +26,7 @@ export type WriteResponse = {
   unchanged: ReQLNumber;
   generated_keys?: ReQLString[];
   changes?: { old_val: ReQLObject; new_val: ReQLObject }[];
-  first_error?: string;
+  first_error?: ReQLString;
 };
 
 class Update<T extends ReQLDatumTypes> extends SingleSelection<

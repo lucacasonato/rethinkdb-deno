@@ -1,16 +1,12 @@
 // Loosely based on https://github.com/rethinkdb/rethinkdb-go/blob/c04e2e4c4c40866139d96497a9d06b01578c1e9e/connection_handshake.go
 
-import { sha256 } from "https://deno.land/x/sha256/mod.ts";
-import { hmac } from "https://deno.land/x/hmac/mod.ts";
-import { pbkdf2 } from "https://deno.land/x/pbkdf2/mod.ts";
-import * as base64 from "https://deno.land/x/base64/mod.ts";
-
-import { Session, SessionImpl } from "./session.ts";
+import { base64, sha256, hmac, pbkdf2 } from "../deps.ts";
+import { Session } from "./session.ts";
 import {
   ReQLError,
   handshakeError,
   ReQLDriverError,
-  ReQLAuthError
+  ReQLAuthError,
 } from "./errors.ts";
 import { Versions } from "./proto.ts";
 
@@ -19,7 +15,7 @@ const protocolVersion = 0;
 export async function handshake(
   session: Session,
   username: string,
-  password: string
+  password: string,
 ): Promise<void> {
   // Preform a V1_0 version handshake and protocol version check.
   await versionHandshake(session);
@@ -45,7 +41,7 @@ export async function handshake(
   const serverSignature = calculateServerSignature(
     saltedPass,
     serverNonce,
-    oldAuthMessage
+    oldAuthMessage,
   );
 
   // Send client final message
@@ -73,7 +69,7 @@ async function versionHandshake(session: Session) {
     resp.max_protocol_version < protocolVersion
   ) {
     throw new ReQLError(
-      `Handshake failed because the server does not support protocol version ${protocolVersion}. The minimum supported version is ${resp.min_protocol_version} and the maxiumum supported version is ${resp.max_protocol_version}.`
+      `Handshake failed because the server does not support protocol version ${protocolVersion}. The minimum supported version is ${resp.min_protocol_version} and the maxiumum supported version is ${resp.max_protocol_version}.`,
     );
   }
 }
@@ -89,23 +85,23 @@ const authenticationMethod = "SCRAM-SHA-256";
 async function writeFirstMessage(
   session: Session,
   username: string,
-  clientNonce: string
+  clientNonce: string,
 ): Promise<string> {
   const authMessage = `n=${username},r=${clientNonce}`;
   await session.writeJSON(
     {
       protocol_version: protocolVersion,
       authentication: `n,,${authMessage}`,
-      authentication_method: authenticationMethod
+      authentication_method: authenticationMethod,
     },
-    true
+    true,
   );
   return authMessage;
 }
 
-function parsePairs(s: string): { [k: string]: string } {
+function parsePairs(s: string): { [k: string]: string | null } {
   const pairs = s.split(",");
-  const kvpairs = pairs.map(pair => {
+  const kvpairs = pairs.map<[string, string | null] | null>((pair) => {
     if (pair.length === 0) {
       return null;
     } else if (pair.length === 1) {
@@ -116,7 +112,7 @@ function parsePairs(s: string): { [k: string]: string } {
       throw new ReQLDriverError("Authentication string pairs are not valid");
     }
   });
-  const kv = {};
+  const kv: { [key: string]: string | null } = {};
   for (const pair of kvpairs) {
     if (pair !== null) {
       kv[pair[0]] = pair[1];
@@ -133,7 +129,7 @@ interface AuthMessageResp {
 }
 
 async function readFirstMessage(
-  session: Session
+  session: Session,
 ): Promise<[number, Uint8Array, string, string]> {
   const resp: AuthMessageResp = await session.readNullTerminatedJSON();
   if (!resp.success) {
@@ -141,30 +137,30 @@ async function readFirstMessage(
   }
   const auth = parsePairs(resp.authentication);
   return [
-    parseInt(auth.i),
-    base64.toUint8Array(auth.s),
-    auth.r,
-    resp.authentication
+    parseInt(auth.i!),
+    base64.toUint8Array(auth.s!),
+    auth.r!,
+    resp.authentication,
   ];
 }
 
 async function writeFinalMessage(
   session: Session,
   serverNonce: string,
-  clientProof: string
+  clientProof: string,
 ): Promise<void> {
   const authMessage = `c=biws,r=${serverNonce},p=${clientProof}`;
   await session.writeJSON(
     {
-      authentication: authMessage
+      authentication: authMessage,
     },
-    true
+    true,
   );
 }
 
 async function readFinalMessage(
   session: Session,
-  serverSignature: string
+  serverSignature: string,
 ): Promise<void> {
   const resp: AuthMessageResp = await session.readNullTerminatedJSON();
   if (!resp.success) {
@@ -172,8 +168,9 @@ async function readFinalMessage(
   }
   const auth = parsePairs(resp.authentication);
   // Validate server response
-  if (auth.v != serverSignature)
+  if (auth.v != serverSignature) {
     throw new ReQLAuthError("Invalid server signature");
+  }
   return;
 }
 
@@ -182,31 +179,39 @@ const encoder = new TextEncoder();
 function saltPassword(
   password: string,
   i: number,
-  salt: Uint8Array
+  salt: Uint8Array,
 ): Uint8Array {
   const pw = encoder.encode(password);
-  const hash = pbkdf2("sha256", pw, salt, null, null, 32, i) as Uint8Array;
+  const hash = pbkdf2(
+    "sha256",
+    pw,
+    salt,
+    undefined,
+    undefined,
+    32,
+    i,
+  ) as Uint8Array;
   return hash;
 }
 
 function calculateProof(
   saltedPass: Uint8Array,
   serverNonce: string,
-  oldAuthMessage: string
+  oldAuthMessage: string,
 ): string {
   const clientKey = hmac(
     "sha256",
     saltedPass,
-    encoder.encode("Client Key")
+    encoder.encode("Client Key"),
   ) as Uint8Array;
 
-  const storedKey = sha256(clientKey, null, null) as Uint8Array;
+  const storedKey = sha256(clientKey, undefined, undefined) as Uint8Array;
 
   const fullAuthMessage = `${oldAuthMessage},c=biws,r=${serverNonce}`;
   const clientSignature = hmac(
     "sha256",
     storedKey,
-    encoder.encode(fullAuthMessage)
+    encoder.encode(fullAuthMessage),
   ) as Uint8Array;
   const clientProof = clientKey.map((v, i) => v ^ clientSignature[i]);
   return base64.fromUint8Array(clientProof);
@@ -215,19 +220,19 @@ function calculateProof(
 function calculateServerSignature(
   saltedPass: Uint8Array,
   serverNonce: string,
-  oldAuthMessage: string
+  oldAuthMessage: string,
 ): string {
   const serverKey = hmac(
     "sha256",
     saltedPass,
-    encoder.encode("Server Key")
+    encoder.encode("Server Key"),
   ) as Uint8Array;
 
   const fullAuthMessage = `${oldAuthMessage},c=biws,r=${serverNonce}`;
   const serverSignature = hmac(
     "sha256",
     serverKey,
-    encoder.encode(fullAuthMessage)
+    encoder.encode(fullAuthMessage),
   ) as Uint8Array;
   return base64.fromUint8Array(serverSignature);
 }

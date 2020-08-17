@@ -7,7 +7,7 @@ import {
   ReQLNumber,
   ReQLString,
   ReQLISO8601,
-  ReQLBinary
+  ReQLBinary,
 } from "./datum_primitives.ts";
 
 export type Object = { [k: string]: Datum } | { [k: number]: Datum };
@@ -38,15 +38,15 @@ export type ReQLObjectTypes =
   | { [k: number]: ReQLDatumTypes };
 
 export abstract class ReQLObject<
-  T extends ReQLObjectTypes = ReQLObjectTypes
+  T extends ReQLObjectTypes = ReQLObjectTypes,
 > extends Runnable<ReQLObject<T>> {}
 
 export class MakeReQLObject extends ReQLObject {
-  constructor(private obj: any, private depth: number) {
+  constructor(private obj: { [id: string]: Datum }, private depth: number) {
     super();
   }
   get query() {
-    const args = {};
+    const args: { [id: string]: unknown } = {};
     for (const key in this.obj) {
       args[key] = exprq(this.obj[key], this.depth - 1);
     }

@@ -9,7 +9,7 @@ import { Runnable } from "./runnable.ts";
 export const utils = {
   do: _do,
   js,
-  uuid
+  uuid,
   // TODO(lucacasonato): implement default
   // TODO(lucacasonato): implement json
   // TODO(lucacasonato): implement literal
@@ -42,7 +42,7 @@ class Do<T extends ReQLDatumTypes> extends SingleSelection<T> {
   get query() {
     return [
       TermType.FUNCALL,
-      [exprq(this.func), ...this.data.map(d => exprq(d))]
+      [exprq(this.func), ...this.data.map((d) => exprq(d))],
     ];
   }
 }
@@ -69,7 +69,7 @@ class UUID extends ReQLString {
     super();
   }
   get query() {
-    const query: any[] = [TermType.UUID];
+    const query: unknown[] = [TermType.UUID];
     return query.concat(this.seed ? [[exprq(this.seed)]] : []);
   }
 }

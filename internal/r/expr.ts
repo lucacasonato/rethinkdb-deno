@@ -1,11 +1,17 @@
 import { Term } from "./runnable.ts";
-import { ReQLBool, ReQLNumber, ReQLString, ReQLISO8601, ReQLBinary } from "./datum_primitives.ts";
+import {
+  ReQLBool,
+  ReQLNumber,
+  ReQLString,
+  ReQLISO8601,
+  ReQLBinary,
+} from "./datum_primitives.ts";
 import {
   ReQLObject,
   ReQLDatumTypes,
   Object,
   Datum,
-  MakeReQLObject
+  MakeReQLObject,
 } from "./datum.ts";
 import { ReQLFunction } from "./function.ts";
 import { ReQLDriverError } from "../errors.ts";
@@ -16,24 +22,24 @@ export function expr(value: number, depth?: number): ReQLNumber;
 export function expr(value: string, depth?: number): ReQLString;
 export function expr(
   value: Datum[] | ReQLArray<ReQLDatumTypes>,
-  depth?: number
+  depth?: number,
 ): ReQLArray<ReQLDatumTypes>;
 export function expr(value: Object | ReQLObject, depth?: number): ReQLObject;
 export function expr(value: Date, depth?: number): ReQLISO8601;
 export function expr(value: ArrayBuffer, depth?: number): ReQLBinary;
 export function expr(
   value: Function | ReQLFunction,
-  depth?: number
+  depth?: number,
 ): ReQLFunction;
 export function expr<T extends Term>(value: T, depth?: number): T;
 export function expr(value: Datum, depth?: number): ReQLDatumTypes;
 export function expr(
   value: Datum | Function | ReQLFunction,
-  depth?: number
+  depth?: number,
 ): ReQLDatumTypes | ReQLFunction;
 export function expr(
   value: Datum | Function | ReQLFunction,
-  depth: number = 20
+  depth = 20,
 ): ReQLDatumTypes | ReQLFunction {
   if (depth === 0) {
     throw new ReQLDriverError("Nesting depth limit exceeded.");
@@ -47,10 +53,11 @@ export function expr(
   if (value instanceof Term) return value;
   if (value instanceof Date) return new ReQLISO8601(value);
   if (value instanceof ArrayBuffer) return new ReQLBinary(value);
-  if (Array.isArray(value))
+  if (Array.isArray(value)) {
     return new ReQLArray<ReQLDatumTypes>(
-      value.map((v: Datum) => expr(v, depth - 1))
+      value.map((v: Datum) => expr(v, depth - 1)),
     );
+  }
   switch (typeof value) {
     case "boolean":
       return new ReQLBool(value);
@@ -67,7 +74,12 @@ export function expr(
 
 export function exprq(
   value: Datum | Function | ReQLFunction,
-  depth?: number
-): any {
+  depth?: number,
+): unknown;
+export function exprq<T extends Term>(value: T, depth?: number): unknown;
+export function exprq(
+  value: Datum | Function | ReQLFunction,
+  depth?: number,
+): unknown {
   return expr(value, depth).query;
 }

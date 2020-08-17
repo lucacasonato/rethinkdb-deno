@@ -1,2 +1,4 @@
 .env
 deno.d.ts
+data/
+docker-compose.yml

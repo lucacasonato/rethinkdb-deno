@@ -3,7 +3,7 @@ export enum Versions {
   V0_2 = 1915781601,
   V0_3 = 1601562686,
   V0_4 = 1074539808,
-  V1_0 = 885177795
+  V1_0 = 885177795,
 }
 
 export enum QueryType {
@@ -11,12 +11,12 @@ export enum QueryType {
   CONTINUE = 2,
   STOP = 3,
   NOREPLY_WAIT = 4,
-  SERVER_INFO = 5
+  SERVER_INFO = 5,
 }
 
 export enum FrameType {
   POS = 1,
-  OPT = 2
+  OPT = 2,
 }
 
 export enum ResponseType {
@@ -27,7 +27,7 @@ export enum ResponseType {
   SERVER_INFO = 5,
   CLIENT_ERROR = 16,
   COMPILE_ERROR = 17,
-  RUNTIME_ERROR = 18
+  RUNTIME_ERROR = 18,
 }
 
 export enum ResponseErrorType {
@@ -38,7 +38,7 @@ export enum ResponseErrorType {
   OP_FAILED = 4100000,
   OP_INDETERMINATE = 4200000,
   USER = 5000000,
-  PERMISSION_ERROR = 6000000
+  PERMISSION_ERROR = 6000000,
 }
 
 export enum ResponseNote {
@@ -46,7 +46,7 @@ export enum ResponseNote {
   ATOM_FEED = 2,
   ORDER_BY_LIMIT_FEED = 3,
   UNIONED_FEED = 4,
-  INCLUDES_STATES = 5
+  INCLUDES_STATES = 5,
 }
 
 export enum DatumType {
@@ -56,7 +56,7 @@ export enum DatumType {
   R_STR = 4,
   R_ARRAY = 5,
   R_OBJECT = 6,
-  R_JSON = 7
+  R_JSON = 7,
 }
 
 export enum TermType {
@@ -245,5 +245,5 @@ export enum TermType {
   BIT_XOR = 193,
   BIT_NOT = 194,
   BIT_SAL = 195,
-  BIT_SAR = 196
+  BIT_SAR = 196,
 }

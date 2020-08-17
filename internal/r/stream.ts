@@ -21,14 +21,14 @@ class Between<T extends ReQLDatumTypes> extends StreamSelection<T> {
   constructor(
     private parent: Runnable<T>,
     private lowerKey: Datum,
-    private upperKey: Datum
+    private upperKey: Datum,
   ) {
     super();
   }
   get query() {
     return [
       TermType.BETWEEN,
-      [exprq(this.parent), exprq(this.lowerKey), exprq(this.upperKey)]
+      [exprq(this.parent), exprq(this.lowerKey), exprq(this.upperKey)],
     ];
   }
 }

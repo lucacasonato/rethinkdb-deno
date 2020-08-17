@@ -9,8 +9,11 @@ export class ReQLArray<T extends ReQLDatumTypes> extends Sequence<T> {
   constructor(private _array?: Term[]) {
     super();
   }
-  get query(): any[] {
-    return [TermType.MAKE_ARRAY, this._array.map(i => i.query)];
+  get query(): unknown[] {
+    if (!this._array) {
+      throw new TypeError("ReQLArray is missing _array property.");
+    }
+    return [TermType.MAKE_ARRAY, this._array.map((i) => i.query)];
   }
   append(d: Datum) {
     return new Append<T>(this, d);
@@ -114,14 +117,14 @@ class InsertAt<T extends ReQLDatumTypes> extends ReQLArray<T> {
   constructor(
     private parent: ReQLArray<T>,
     private offset: number | ReQLNumber,
-    private value: T
+    private value: T,
   ) {
     super();
   }
   get query() {
     return [
       TermType.INSERT_AT,
-      [exprq(this.parent), exprq(this.offset), exprq(this.value)]
+      [exprq(this.parent), exprq(this.offset), exprq(this.value)],
     ];
   }
 }
@@ -130,7 +133,7 @@ class DeleteAt<T extends ReQLDatumTypes> extends ReQLArray<T> {
   constructor(
     private parent: ReQLArray<T>,
     private offset: number | ReQLNumber,
-    private endOffset?: number | ReQLNumber
+    private endOffset?: number | ReQLNumber,
   ) {
     super();
   }
@@ -138,8 +141,8 @@ class DeleteAt<T extends ReQLDatumTypes> extends ReQLArray<T> {
     return [
       TermType.DELETE_AT,
       [exprq(this.parent), exprq(this.offset)].concat(
-        this.endOffset ? [exprq(this.endOffset)] : []
-      )
+        this.endOffset ? [exprq(this.endOffset)] : [],
+      ),
     ];
   }
 }
@@ -148,14 +151,14 @@ class ChangeAt<T extends ReQLDatumTypes> extends ReQLArray<T> {
   constructor(
     private parent: ReQLArray<T>,
     private offset: number | ReQLNumber,
-    private value: Datum
+    private value: Datum,
   ) {
     super();
   }
   get query() {
     return [
       TermType.CHANGE_AT,
-      [exprq(this.parent), exprq(this.offset), exprq(this.value)]
+      [exprq(this.parent), exprq(this.offset), exprq(this.value)],
     ];
   }
 }
@@ -164,14 +167,14 @@ class SpliceAt<T extends ReQLDatumTypes> extends ReQLArray<T> {
   constructor(
     private parent: ReQLArray<T>,
     private offset: number | ReQLNumber,
-    private array: T[] | ReQLArray<T>
+    private array: T[] | ReQLArray<T>,
   ) {
     super();
   }
   get query() {
     return [
       TermType.SPLICE_AT,
-      [exprq(this.parent), exprq(this.offset), exprq(this.array)]
+      [exprq(this.parent), exprq(this.offset), exprq(this.array)],
     ];
   }
 }

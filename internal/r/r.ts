@@ -24,5 +24,5 @@ export const r = {
   ...operators,
   ...time,
   ...geometry,
-  ...utils
+  ...utils,
 };

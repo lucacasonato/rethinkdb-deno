@@ -1,9 +1,10 @@
-import * as base64 from "https://deno.land/x/base64/mod.ts";
+import { base64 } from "../../deps.ts";
 import { Runnable } from "./runnable.ts";
 import { TermType } from "../proto.ts";
 import { ReQLDatumTypes } from "./datum.ts";
 
 export class ReQLBool extends Runnable<ReQLBool> {
+  // deno-lint-ignore no-explicit-any
   constructor(private value?: any) {
     super();
   }
@@ -13,6 +14,7 @@ export class ReQLBool extends Runnable<ReQLBool> {
 }
 
 export class ReQLNumber extends Runnable<ReQLNumber> {
+  // deno-lint-ignore no-explicit-any
   constructor(private value?: any) {
     super();
   }
@@ -22,6 +24,7 @@ export class ReQLNumber extends Runnable<ReQLNumber> {
 }
 
 export class ReQLString extends Runnable<ReQLString> {
+  // deno-lint-ignore no-explicit-any
   constructor(private value?: any) {
     super();
   }
@@ -50,11 +53,11 @@ export class ReQLBinary extends Runnable<ReQLBinary> {
   get query() {
     return [
       TermType.BINARY,
-      [base64.fromUint8Array(new Uint8Array(this.buffer))]
+      [base64.fromUint8Array(new Uint8Array(this.buffer))],
     ];
   }
 }
 
 export abstract class ReQLDatum<
-  T extends ReQLDatumTypes = ReQLDatumTypes
+  T extends ReQLDatumTypes = ReQLDatumTypes,
 > extends Runnable<T> {}

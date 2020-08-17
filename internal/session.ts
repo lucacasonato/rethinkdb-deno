@@ -1,13 +1,13 @@
-import { BufReader } from "https://deno.land/std/io/bufio.ts";
-import { deferred } from "https://deno.land/std/util/async.ts";
 import { ReQLError, ReQLDriverError } from "./errors.ts";
-
+import { BufReader, deferred } from "../deps.ts";
 const sessionClosedError = new Error("Session is already closed.");
 
 export interface Session {
   read(length: number): Promise<Uint8Array>;
+  // deno-lint-ignore no-explicit-any
   readNullTerminatedJSON(): Promise<any>;
   write(p: Uint8Array, nullTerminate?: boolean): Promise<number>;
+  // deno-lint-ignore no-explicit-any
   writeJSON(d: any, nullTerminate?: boolean): Promise<number>;
   dispatch(data: Uint8Array): Promise<Uint8Array>;
   close(): void;
@@ -21,7 +21,7 @@ export class SessionImpl implements Session {
   private conn: Deno.Conn;
   private reader: BufReader;
   private closed = false;
-  private closer = deferred<Deno.EOF>();
+  private closer = deferred<null>();
   private completers: { [id: number]: (data: Uint8Array) => void } = {};
   private listening = false;
 
@@ -32,14 +32,16 @@ export class SessionImpl implements Session {
 
   async read(length: number): Promise<Uint8Array> {
     const slice = new Uint8Array(length);
-    if ((await this.reader.read(slice)) == Deno.EOF)
+    if ((await this.reader.read(slice)) === null) {
       throw Error("Reader has reached end of file.");
+    }
     return slice;
   }
 
+  // deno-lint-ignore no-explicit-any
   async readNullTerminatedJSON(): Promise<any> {
     const slice = await this.reader.readSlice(0);
-    if (slice == Deno.EOF) throw Error("Reader has reached end of file.");
+    if (slice === null) throw Error("Reader has reached end of file.");
     const buffer = slice.slice(0, slice.length - 1);
     const msg = decoder.decode(buffer);
     if (msg.startsWith("ERROR:")) {
@@ -65,6 +67,7 @@ export class SessionImpl implements Session {
     return this.write(p, nullTerminate);
   }
 
+  // deno-lint-ignore no-explicit-any
   writeJSON(d: any, nullTerminate = false): Promise<number> {
     if (this.closed) throw sessionClosedError;
     const s = JSON.stringify(d);
@@ -79,7 +82,7 @@ export class SessionImpl implements Session {
     this.listening = true;
     while (!this.closed && Object.keys(this.completers).length > 0) {
       const header = await Promise.race([this.read(12), this.closer]);
-      if (header === Deno.EOF) break;
+      if (header === null) break;
       const view = new DataView(header.buffer);
       const id = view.getUint32(4);
       const size = view.getUint32(8, true);
@@ -100,7 +103,7 @@ export class SessionImpl implements Session {
     view.setUint32(4, id);
     view.setUint32(8, data.length, true);
     sender.set(data, 12);
-    const promise = new Promise<Uint8Array>(resolve => {
+    const promise = new Promise<Uint8Array>((resolve) => {
       this.completers[id] = resolve;
       this.tryStartListening();
       this.write(sender);
@@ -110,7 +113,7 @@ export class SessionImpl implements Session {
 
   close() {
     this.closed = true;
-    this.closer.resolve(Deno.EOF);
+    this.closer.resolve(null);
     this.conn.close();
   }
 }
