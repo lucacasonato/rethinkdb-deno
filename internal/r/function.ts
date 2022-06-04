@@ -6,7 +6,7 @@ export class Var extends Term {
   constructor(private id: number) {
     super();
   }
-  get query() {
+  get query():any {
     return [TermType.VAR, [exprq(this.id)]];
   }
 }
@@ -15,7 +15,7 @@ export class ReQLFunction extends Term {
   constructor(private func: Function) {
     super();
   }
-  get query() {
+  get query():any {
     const args = [];
     const argVars = [];
     for (let i = 0; i < this.func.length; i++) {
